@@ -1,9 +1,10 @@
 # Security Policy and Hardening Notes
 
 Dr.Health is a health-information app, so the security baseline is intentionally
-strict: no shared AI key ships with the app, each user's key is encrypted at rest,
-health content is not logged, uploads are validated by content, and privileged
-access uses HttpOnly cookies.
+strict: no shared OpenRouter key ships with the app, each user's key is encrypted
+at rest, health content is not logged, uploads are validated by content, and
+privileged access uses HttpOnly cookies. Guest mode is a separate text-only path
+with its own server-side quotas and no access to signed-in users' keys.
 
 ## Reporting a vulnerability
 
@@ -36,9 +37,15 @@ Node/Express (server/)
    └──► OpenRouter: user's own bearer key (server-to-server)
 ```
 
-The browser never receives an AI provider key and never calls the provider
+The browser never receives an AI provider key and never calls a provider
 directly. `public/` is the only directory served statically. There is no owner
-API key in `.env` and no shared key in the browser.
+OpenRouter key in `.env` and no shared key in the browser.
+
+Guest mode uses a separate OpenAI-compatible endpoint from the server. The
+default endpoint is keyless; an optional `GUEST_API_KEY` (for example an LLM7
+free token) stays server-side. Guest requests are text-only, cannot access
+signed-in users' keys, and are bounded by a signed guest cookie plus per-IP,
+per-guest, and global daily quotas.
 
 ## Checklist
 
@@ -53,10 +60,11 @@ API key in `.env` and no shared key in the browser.
 | Validate form inputs | Done | Zod schemas, length limits, control-character stripping, strict JSON, bounded history |
 | Protect admin routes | Done | Login + scrypt verification, signed server-side session, rate limit, Origin/CSRF checks |
 | Disable production debugging | Done | Generic errors in production, no stack traces, no `X-Powered-By`, no upstream error bodies |
-| Server-side API secrets | Done | Per-user keys encrypted with AES-256-GCM; decrypted only for that user's request; no owner key |
+| Server-side API secrets | Done | Per-user keys encrypted with AES-256-GCM; decrypted only for that user's request; no owner OpenRouter key. Optional guest token is server-side only |
 | Encrypt keys at rest | Done | AES-256-GCM with a random 96-bit IV and auth tag; scrypt-derived key from `KEY_ENCRYPTION_SECRET`/`SESSION_SECRET` |
 | OAuth CSRF protection | Done | PKCE S256, signed short-lived `state` cookie, exact callback URL, one-time code |
-| Rate limit requests | Done | Global, chat, OAuth, and login limiters with standard rate-limit headers |
+| Rate limit requests | Done | Global, chat, OAuth, login, and guest limiters with standard rate-limit headers |
+| Bound guest usage | Done | Signed HttpOnly guest cookie; per-guest/IP/global daily quotas; 5/10-min IP limit; 500-token output cap; 4-turn/4,000-char history; text-only |
 | Validate file uploads | Done | In-memory multer, 1 file, size limit, MIME allowlist, magic-byte check, no disk writes, no SVG |
 | Keep sensitive data from logs | Done | Request logger logs metadata only; recursive redaction; no prompts, replies, history, images, or API keys |
 | Hash passwords securely | Done | scrypt (N=32768, r=8, p=1), 16-byte random salt, constant-time compare, min 12 chars |
@@ -72,7 +80,7 @@ Request hosts and origins are validated as described below.
 
 ## What was fixed
 
-### 1. No shared provider key
+### 1. No shared OpenRouter key
 
 The original `index.html` built a Google API key from base64 fragments and called
 `generativelanguage.googleapis.com` directly. That key was public to every
@@ -81,9 +89,10 @@ visitor and is now removed from the app and the local `.env`. It must be
 remain in browser caches, forks, or git history. Take down any old static
 deployment that still serves the compromised key.
 
-The current app does not use a shared AI key. Each user signs in through
+The current app does not use a shared OpenRouter key. Each user signs in through
 OpenRouter OAuth; the server receives a key tied to that user's account and uses
-it only for that user's requests.
+it only for that user's requests. Guest mode uses a separate text-only endpoint;
+the default is keyless, and any optional guest token is server-side only.
 
 ### 2. Per-user key vault
 
@@ -130,6 +139,20 @@ it only for that user's requests.
 - Files are held in memory and never written to disk or a public directory.
 - Uploads are sent to the model as an OpenAI-compatible image data URL; original
   filenames are ignored.
+
+`server/routes/guest.js` separately enforces text-only guest requests:
+
+- A JSON object with a 1–2,000 character message and at most 4 history turns
+  (4,000 characters total), using the same sanitizer and strict schema.
+- Any `image` field is rejected with `GUEST_TEXT_ONLY`; guest requests cannot
+  carry multipart uploads.
+- A signed HttpOnly guest cookie, same-origin Fetch Metadata, and an IP rate
+  limiter are required.
+- Per-guest, per-IP, and global daily quotas are reserved before the upstream
+  call. Output is capped at 500 tokens and 6,000 characters; the upstream
+  timeout is 45 seconds and at most two guest requests run concurrently.
+- Guest provider error bodies are never forwarded; only a generic
+  `GUEST_BUSY`/`GUEST_UNAVAILABLE` error and request ID are returned.
 
 ### 5. Admin protection
 
@@ -227,6 +250,8 @@ as DOMPurify and keep the same CSP.
 | ----- | ------- |
 | All `/api` | 300 requests / 15 min per IP |
 | `/api/chat` | 20 requests / 10 min per IP |
+| `/api/guest/chat` | 5 requests / 10 min per IP |
+| Guest daily budget | 5 per guest, 10 per IP, 200 per process |
 | OAuth start/callback | 30 requests / 15 min per IP |
 | Admin login | 5 failed attempts / 15 min per IP |
 
@@ -234,8 +259,11 @@ Responses use standard `RateLimit`/`RateLimit-Policy` headers and return HTTP
 429 with a request ID. These are per-process in-memory counters; use a shared
 store (Redis) for multi-instance deployments.
 
-Chat now requires a signed-in user, which removes the old public-cost-abuse
-surface. The per-user OpenRouter account also carries its own free-model limits.
+Signed-in chat requires a user, which removes the old public-cost-abuse surface.
+The per-user OpenRouter account also carries its own free-model limits. Guest
+chat is deliberately text-only and has a separate, much smaller budget; it never
+uses a signed-in user's key. Clearing a guest cookie does not bypass the per-IP
+limit or the global budget.
 
 ### 11. Database and parameterized queries
 
@@ -289,10 +317,15 @@ can be added safely.
 ## Residual risks and limitations
 
 - **AI provider processing:** prompts and images are sent to OpenRouter using the
-  signed-in user's key. Free models may have their own data policies. This app is
-  not HIPAA/GDPR-compliant out of the box and must not be used for protected
-  health information without appropriate agreements, retention controls, and
-  legal review.
+  signed-in user's key. Guest prompts are sent from the server to the configured
+  guest endpoint. Free models and the keyless guest endpoint may have their own
+  data policies. This app is not HIPAA/GDPR-compliant out of the box and must not
+  be used for protected health information without appropriate agreements,
+  retention controls, and legal review.
+- **Guest endpoint availability:** the default guest endpoint is a free public
+  endpoint with no SLA and no guaranteed model quality. If an LLM7 token is
+  configured, guest traffic consumes that shared free allowance and may hit its
+  daily/rate limits. Use a provider and credentials you control for production.
 - **AI output:** model responses are not medically validated. The system prompt
   adds safety rules and emergency guidance, but it is not a clinical device.
   Gemma 4 is a general model, not a medical-specific model.
@@ -309,9 +342,11 @@ can be added safely.
   `SameSite=Lax`, and a seven-day default lifetime limit exposure, but a stolen
   cookie can be used until it expires or the user record is deleted. Shorten
   `USER_SESSION_TTL_MINUTES` for higher-risk deployments.
-- **Single-process state:** rate limits, metrics, and admin sessions are in
-  memory. Restarting invalidates admin sessions; multiple instances require a
-  shared session/rate-limit store. User keys persist in Postgres.
+- **Single-process state:** rate limits, metrics, admin sessions, and guest
+  quota counters are in memory. Restarting resets guest daily counters and
+  invalidates admin sessions; multiple instances require a shared
+  session/rate-limit store. User keys persist in Postgres. Guest cookies are
+  signed and survive restarts, but their daily counters do not.
 - **Database availability:** a database outage prevents sign-in and chat. Use
   Neon/Render health checks and monitor `store_init_failed` / `request_failed`
   logs. The current `pg` SSL setting uses `rejectUnauthorized: false` for Neon
@@ -333,5 +368,7 @@ can be added safely.
 3. Rotate the Postgres password/connection string and update `DATABASE_URL`.
 4. Change the admin password and regenerate `ADMIN_PASSWORD_HASH`.
 5. If a user key was exposed, revoke it from the user's OpenRouter account.
-6. If any secret was committed, remove it from git history and force-rotate it;
+6. If `GUEST_API_KEY` was exposed, revoke/rotate the guest provider token and
+   update the Render environment variable.
+7. If any secret was committed, remove it from git history and force-rotate it;
    deleting the file in a later commit is not enough.

@@ -43,3 +43,9 @@ export const authLimiter = rateLimit({
   windowMs: config.authRateWindowMs,
   limit: config.authRateLimit,
 });
+
+export const guestLimiter = rateLimit({
+  ...shared,
+  windowMs: config.guestRateWindowMs,
+  limit: config.guestRateLimit,
+});

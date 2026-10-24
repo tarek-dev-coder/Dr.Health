@@ -277,9 +277,18 @@ h1 {
 .account {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 10px;
     padding-top: 2px;
     flex: 0 0 auto;
+}
+
+.guest-remaining {
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 650;
+    white-space: nowrap;
 }
 
 .account-status {
@@ -371,6 +380,19 @@ h1 {
 .auth-button:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 3px;
+}
+
+.auth-button-secondary {
+    margin-top: 10px;
+    border-color: var(--line-strong);
+    background: transparent;
+    color: var(--accent);
+}
+
+.auth-button-secondary:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-dark);
 }
 
 .auth-gate .auth-note {
@@ -619,6 +641,10 @@ h1 {
     margin: 8px 4px 0;
     color: var(--ink-faint);
     font-size: 0.68rem;
+}
+
+.guest-mode-note {
+    color: var(--accent);
 }
 
 /* Footer ----------------------------------------------------------------- */

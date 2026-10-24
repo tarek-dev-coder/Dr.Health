@@ -15,6 +15,7 @@ for (const key of [
   'OPENROUTER_CALLBACK_URL',
   'DATABASE_URL',
   'KEY_ENCRYPTION_SECRET',
+  'GUEST_API_KEY',
   'ADMIN_PASSWORD_HASH',
   'SESSION_SECRET',
   'ALLOWED_ORIGINS',
@@ -46,6 +47,35 @@ const envSchema = z.object({
     .default('google/gemma-4-26b-a4b-it:free,nvidia/nemotron-3.5-super-vl:free'),
   OPENROUTER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(60000),
   OPENROUTER_KEY_LABEL: z.string().trim().min(1).max(64).default('Dr.Health'),
+
+  // Guest mode is text-only and uses a separate server-side provider. The
+  // default OVHcloud endpoint is keyless; LLM7 can be used instead by setting
+  // GUEST_API_URL, GUEST_MODEL, and GUEST_API_KEY.
+  GUEST_MODE_ENABLED: z.enum(['true', 'false']).default('true'),
+  GUEST_API_URL: z
+    .string()
+    .trim()
+    .url()
+    .default('https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions'),
+  GUEST_MODEL: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z0-9._:/-]{1,120}$/, 'GUEST_MODEL contains invalid characters')
+    .default('Meta-Llama-3_3-70B-Instruct'),
+  GUEST_API_KEY: z.string().trim().min(1).optional(),
+  GUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(45000),
+  GUEST_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(50).max(2000).default(500),
+  GUEST_MAX_MESSAGE_CHARS: z.coerce.number().int().min(100).max(10000).default(2000),
+  GUEST_MAX_HISTORY_TURNS: z.coerce.number().int().min(0).max(20).default(4),
+  GUEST_MAX_HISTORY_CHARS: z.coerce.number().int().min(0).max(20000).default(4000),
+  GUEST_MAX_RESPONSE_CHARS: z.coerce.number().int().min(500).max(20000).default(6000),
+  GUEST_DAILY_LIMIT: z.coerce.number().int().min(1).max(1000).default(5),
+  GUEST_IP_DAILY_LIMIT: z.coerce.number().int().min(1).max(10000).default(10),
+  GUEST_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(100000).default(200),
+  GUEST_RATE_LIMIT: z.coerce.number().int().min(1).max(1000).default(5),
+  GUEST_RATE_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(10),
+  GUEST_MAX_CONCURRENT: z.coerce.number().int().min(1).max(20).default(2),
+  GUEST_SESSION_TTL_MINUTES: z.coerce.number().int().min(5).max(10080).default(1440),
 
   // Postgres is required in production so encrypted user keys survive restarts.
   DATABASE_URL: z.string().trim().min(1).optional(),
@@ -181,6 +211,13 @@ if (isProduction && new URL(env.OPENROUTER_AUTH_URL).protocol !== 'https:') {
 if (isProduction && new URL(env.OPENROUTER_API_BASE).protocol !== 'https:') {
   throw new Error('OPENROUTER_API_BASE must use HTTPS in production');
 }
+if (
+  isProduction &&
+  env.GUEST_MODE_ENABLED === 'true' &&
+  new URL(env.GUEST_API_URL).protocol !== 'https:'
+) {
+  throw new Error('GUEST_API_URL must use HTTPS in production');
+}
 
 const databaseSsl =
   env.DATABASE_SSL === 'true'
@@ -235,6 +272,25 @@ export const config = Object.freeze({
   openrouterTimeoutMs: env.OPENROUTER_TIMEOUT_MS,
   openrouterKeyLabel: env.OPENROUTER_KEY_LABEL,
 
+  guestModeEnabled: env.GUEST_MODE_ENABLED === 'true',
+  guestApiUrl: env.GUEST_API_URL,
+  guestModel: env.GUEST_MODEL,
+  guestApiKey: env.GUEST_API_KEY,
+  guestTimeoutMs: env.GUEST_TIMEOUT_MS,
+  guestMaxOutputTokens: env.GUEST_MAX_OUTPUT_TOKENS,
+  guestMaxMessageChars: env.GUEST_MAX_MESSAGE_CHARS,
+  guestMaxHistoryTurns: env.GUEST_MAX_HISTORY_TURNS,
+  guestMaxHistoryChars: env.GUEST_MAX_HISTORY_CHARS,
+  guestMaxResponseChars: env.GUEST_MAX_RESPONSE_CHARS,
+  guestDailyLimit: env.GUEST_DAILY_LIMIT,
+  guestIpDailyLimit: env.GUEST_IP_DAILY_LIMIT,
+  guestGlobalDailyLimit: env.GUEST_GLOBAL_DAILY_LIMIT,
+  guestRateLimit: env.GUEST_RATE_LIMIT,
+  guestRateWindowMs: env.GUEST_RATE_WINDOW_MINUTES * 60 * 1000,
+  guestMaxConcurrent: env.GUEST_MAX_CONCURRENT,
+  guestSessionTtlSeconds: env.GUEST_SESSION_TTL_MINUTES * 60,
+  guestCookieName: isProduction ? '__Host-dh_guest' : 'dh_guest',
+
   databaseUrl: env.DATABASE_URL,
   databaseSsl,
 
@@ -273,4 +329,7 @@ export const config = Object.freeze({
 export const isAdminConfigured = Boolean(config.adminPasswordHash && config.sessionSecret);
 export const isUserAuthConfigured = Boolean(
   config.sessionSecret && config.keyEncryptionSecret && config.openrouterCallbackUrl,
+);
+export const isGuestConfigured = Boolean(
+  config.guestModeEnabled && config.guestApiUrl && config.guestModel && config.sessionSecret,
 );

@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { z } from 'zod';
 import { config } from '../config.js';
 import { AppError, badRequest, payloadTooLarge, unsupportedMedia } from '../lib/errors.js';
+import { parseHistory, parseMessage } from '../lib/chatInput.js';
 import { validateUploadedImage, ALLOWED_IMAGE_TYPES } from '../lib/image.js';
 import { decryptSecret } from '../lib/keyVault.js';
-import { sanitizeText } from '../lib/text.js';
 import { metrics } from '../lib/metrics.js';
 import { logger } from '../lib/logger.js';
 import { generateReply, DEFAULT_IMAGE_PROMPT } from '../services/openrouter.js';
@@ -34,49 +33,6 @@ const upload = multer({
   },
 });
 
-const historyTurnSchema = z
-  .object({
-    role: z.enum(['user', 'model']),
-    text: z.string().min(1).max(config.maxMessageChars),
-  })
-  .strict();
-
-const historySchema = z.array(historyTurnSchema).max(config.maxHistoryTurns);
-
-function parseHistory(rawHistory) {
-  if (rawHistory === undefined || rawHistory === null || rawHistory === '') return [];
-
-  let value = rawHistory;
-  if (typeof rawHistory === 'string') {
-    if (rawHistory.length > 250000) {
-      throw badRequest('Conversation history is too large. Start a new chat.', 'HISTORY_TOO_LARGE');
-    }
-    try {
-      value = JSON.parse(rawHistory);
-    } catch {
-      throw badRequest('Conversation history must be valid JSON.', 'INVALID_HISTORY');
-    }
-  } else if (typeof rawHistory !== 'object') {
-    throw badRequest('Conversation history is invalid.', 'INVALID_HISTORY');
-  }
-
-  const parsed = historySchema.safeParse(value);
-  if (!parsed.success) {
-    throw badRequest('Conversation history is invalid.', 'INVALID_HISTORY');
-  }
-
-  const turns = parsed.data
-    .map((turn) => ({ role: turn.role, text: sanitizeText(turn.text) }))
-    .filter((turn) => turn.text.length > 0);
-
-  const totalChars = turns.reduce((total, turn) => total + turn.text.length, 0);
-  if (totalChars > config.maxHistoryChars) {
-    throw badRequest('Conversation history is too large. Start a new chat.', 'HISTORY_TOO_LARGE');
-  }
-
-  return turns;
-}
-
 function limitContentLength(req, res, next) {
   const declaredLength = Number(req.get('content-length'));
   const maxBytes = config.maxUploadBytes + 64 * 1024;
@@ -100,20 +56,7 @@ chatRouter.post(
     try {
       const rawMessage = req.body?.message;
       const rawHistory = req.body?.history;
-
-      let message = '';
-      if (rawMessage !== undefined) {
-        if (typeof rawMessage !== 'string') {
-          throw badRequest('The message must be text.', 'INVALID_MESSAGE');
-        }
-        message = sanitizeText(rawMessage);
-        if (message.length > config.maxMessageChars) {
-          throw badRequest(
-            `The message must be ${config.maxMessageChars} characters or fewer.`,
-            'MESSAGE_TOO_LONG',
-          );
-        }
-      }
+      const message = parseMessage(rawMessage, config.maxMessageChars);
 
       if (!message && !req.file) {
         throw badRequest('Provide a message or an image.', 'MESSAGE_REQUIRED');

@@ -16,12 +16,18 @@ language, or upload a photo of a meal, fridge, or medical image.
 2. OpenRouter handles sign-in and creates an API key tied to that user's account.
 3. The server receives the key once, encrypts it with AES-256-GCM, and stores it
    in Postgres. The browser never receives the key.
-4. Every chat request uses the signed-in user's decrypted key. The owner's key is
-   not used, and there is no shared API key in `.env`.
+4. Every signed-in chat request uses that user's decrypted key. The owner's key
+   is not used, and there is no shared OpenRouter key in `.env`.
 5. The default free model is Google Gemma 4 31B (multimodal), with free fallback
    models. Free-model usage is limited by the user's OpenRouter account (currently
    about 50 requests/day). This is a general model, not a clinically validated
    medical model, and not Gemini 3.6 Flash.
+6. Guest mode is optional and text-only. It calls a separate OpenAI-compatible
+   guest endpoint from the server, never from the browser. The default endpoint
+   is keyless; LLM7 can be configured instead with a free token. Guest requests
+   have their own signed session, per-guest/IP/global daily quotas, a small
+   history window, a 500-token output cap, and a response-size cap. They never
+   use a signed-in user's key and cannot upload images.
 
 The UI is a light editorial layout with a serif display face and one teal accent.
 The hero animation is opt-in: a 24 KB poster loads first, and the animated WebP
@@ -58,7 +64,8 @@ Start the server:
 npm start
 ```
 
-Open <http://localhost:3000> and click **Continue with Google**. The OAuth
+Open <http://localhost:3000> and click **Continue with Google**, or choose
+**Continue as guest** for text-only access without an account. The OAuth
 callback defaults to `http://localhost:3000/auth/callback`; localhost callbacks
 are supported by OpenRouter on any port. No OpenRouter API key is stored in
 `.env`.
@@ -144,6 +151,51 @@ Common codes:
 | `AI_CREDITS_EXHAUSTED` | The user's OpenRouter account needs credits |
 | `AI_TIMEOUT` / `AI_UNAVAILABLE` | Upstream timeout or outage |
 
+### Guest API (optional)
+
+Guest mode is enabled by default. It does not require an account and is
+text-only.
+
+| Method | Path                 | Purpose                                      |
+| ------ | -------------------- | -------------------------------------------- |
+| POST   | `/api/guest/session` | Start a signed guest session                 |
+| GET    | `/api/guest/session` | Check guest availability and remaining quota |
+| POST   | `/api/guest/chat`    | Send a text question; returns `reply` and `remaining` |
+
+`POST /api/guest/chat` accepts JSON:
+
+```json
+{
+  "message": "What is a balanced breakfast?",
+  "history": [
+    { "role": "user", "text": "..." },
+    { "role": "model", "text": "..." }
+  ]
+}
+```
+
+The guest session is a signed HttpOnly cookie (`SameSite=Lax`, `Secure` in
+production). Defaults are 5 questions per guest per day, 10 per IP per day, and
+200 across the process per day, with a 5-requests/10-minutes IP limit. Guest
+messages are capped at 2,000 characters, history at 4 turns/4,000 characters,
+output at 500 tokens, and the returned text at 6,000 characters. Images are
+rejected with `GUEST_TEXT_ONLY`.
+
+The default guest endpoint is keyless. To use LLM7 instead, set:
+
+```dotenv
+GUEST_API_URL=https://api.llm7.io/v1/chat/completions
+GUEST_MODEL=<LLM7 free model id>
+GUEST_API_KEY=<LLM7 free token>
+```
+
+The token stays on the server and is never sent to the browser. If the guest
+provider is rate-limited or unavailable, the API returns `GUEST_BUSY` or
+`GUEST_UNAVAILABLE`; the browser offers sign-in as the fallback. Set
+`GUEST_MODE_ENABLED=false` to hide guest mode. The keyless default is a free
+public endpoint without an SLA; for a production service, use a provider and
+credentials you control.
+
 ## Configuration
 
 All settings live in `.env`; see [.env.example](.env.example). The most
@@ -157,6 +209,17 @@ important ones:
 | `OPENROUTER_MODEL` | `google/gemma-4-31b-it:free` | Free multimodal primary model |
 | `OPENROUTER_FALLBACK_MODELS` | `google/gemma-4-26b-a4b-it:free,nvidia/nemotron-3.5-super-vl:free` | Tried on quota/outage |
 | `OPENROUTER_TIMEOUT_MS` | `60000` | Maximum wait for a model response |
+| `GUEST_MODE_ENABLED` | `true` | Show and serve text-only guest mode |
+| `GUEST_API_URL` | keyless OVH endpoint | OpenAI-compatible guest endpoint; use LLM7 or another provider here |
+| `GUEST_MODEL` | `Meta-Llama-3_3-70B-Instruct` | Guest model id; set to your LLM7 free model id if using LLM7 |
+| `GUEST_API_KEY` | unset | Optional server-side guest token; sent only to the guest endpoint |
+| `GUEST_DAILY_LIMIT` | `5` | Guest requests per signed guest session per UTC day |
+| `GUEST_IP_DAILY_LIMIT` | `10` | Guest requests per IP per UTC day |
+| `GUEST_GLOBAL_DAILY_LIMIT` | `200` | Guest requests per process per UTC day |
+| `GUEST_RATE_LIMIT` | `5` per 10 min | Per-IP guest chat limiter |
+| `GUEST_MAX_OUTPUT_TOKENS` | `500` | Guest output cap |
+| `GUEST_MAX_MESSAGE_CHARS` | `2000` | Guest message cap |
+| `GUEST_MAX_HISTORY_TURNS` | `4` | Guest history turns |
 | `DATABASE_URL` | — | Required in production; Neon/Postgres connection string |
 | `DATABASE_SSL` | `auto` | `auto` uses TLS in production |
 | `SESSION_SECRET` | — | Required in production; signs OAuth state and user sessions |
@@ -227,7 +290,8 @@ npm run audit
 
 The tests cover security headers, CORS/origin enforcement, input and upload
 validation, OAuth state/PKCE, encrypted key storage, per-user chat proxying,
-fallback models, quota errors, logout, admin sessions, and frontend
+fallback models, quota errors, logout, admin sessions, guest session cookies,
+guest quotas, guest text-only enforcement, guest provider errors, and frontend
 secret/storage checks.
 
 ## Deployment: Render Free + Neon
@@ -256,7 +320,11 @@ secret/storage checks.
    ALLOWED_HOSTS=your-app.onrender.com
    TRUST_PROXY=1
    ENFORCE_HTTPS=true
+   GUEST_MODE_ENABLED=true
    ```
+
+   Guest mode uses the keyless default. To use LLM7, also set
+   `GUEST_API_URL`, `GUEST_MODEL`, and `GUEST_API_KEY` as described above.
 
 5. Deploy. Render's first request after inactivity may be slow because Free
    instances spin down. Postgres and encrypted keys persist across restarts.
@@ -271,12 +339,18 @@ sessions to a shared store such as Redis.
 
 ## Privacy and medical safety
 
-- Requests are sent to OpenRouter using the signed-in user's own key. Free
+- Signed-in requests are sent to OpenRouter using the user's own key. Free
   models may have their own data policies; do not enter identifying information
   or protected health information.
-- Chat history is kept in the browser's memory only and is lost on reload.
+- Guest requests are sent from the server to the configured guest endpoint.
+  Guest mode is text-only and limited; the default keyless endpoint has no SLA.
+  If you configure a shared LLM7 token, guest usage consumes that token's free
+  allowance.
+- Chat history is kept in the browser's memory only and is lost on reload. Guest
+  quota counters are in process memory and reset on restart or at UTC midnight.
 - The server stores the encrypted OpenRouter key, a local user ID, a key hash,
   and timestamps. It does not store chat history, prompts, replies, or images.
+  Guest mode does not create a database record.
 - Dr.Health is not a doctor, does not diagnose, and does not replace professional
   care. In an emergency, call your local emergency number.
 

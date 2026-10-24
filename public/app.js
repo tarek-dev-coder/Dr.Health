@@ -2,9 +2,13 @@
 
 const API_BASE = '/api';
 const MAX_MESSAGE_CHARS = 4000;
+const MAX_GUEST_MESSAGE_CHARS = 2000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_HISTORY_TURNS = 20;
 const MAX_HISTORY_CHARS = 20000;
+const MAX_GUEST_HISTORY_TURNS = 4;
+const MAX_GUEST_HISTORY_CHARS = 4000;
+const DEFAULT_GUEST_LIMIT = 5;
 const REQUEST_TIMEOUT_MS = 75000;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const IMAGE_COMPRESSION_THRESHOLD = 1.5 * 1024 * 1024;
@@ -29,34 +33,125 @@ const heroAnimation = document.getElementById('heroAnimation');
 const authGate = document.getElementById('authGate');
 const authError = document.getElementById('authError');
 const authButton = document.getElementById('authButton');
+const guestButton = document.getElementById('guestButton');
+const guestGateNote = document.getElementById('guestGateNote');
 const account = document.getElementById('account');
+const guestAccount = document.getElementById('guestAccount');
+const guestRemaining = document.getElementById('guestRemaining');
 const signOutButton = document.getElementById('signOutButton');
 const composer = document.getElementById('composer');
+const composerHint = document.getElementById('composer-hint');
+const guestModeNote = document.getElementById('guestModeNote');
 
 let chatHistory = [];
 let uploadedImage = null;
 let busy = false;
 let typingIndicator = null;
+let mode = null;
+let guestAvailable = true;
+let guestLimit = DEFAULT_GUEST_LIMIT;
 
 function setError(message) {
     errorDiv.textContent = message || '';
 }
 
+function setGuestLimit(limit) {
+    const parsed = Number(limit);
+    if (Number.isInteger(parsed) && parsed > 0 && parsed <= 1000) {
+        guestLimit = parsed;
+    }
+
+    if (guestGateNote) {
+        guestGateNote.textContent = guestAvailable
+            ? `Guest mode is text-only and limited to ${guestLimit} questions a day. Sign in for image support and more questions.`
+            : 'Guest mode is unavailable right now. Sign in to continue.';
+    }
+}
+
+function setGuestRemaining(remaining) {
+    const safeRemaining = Number.isInteger(remaining) ? Math.max(0, remaining) : 0;
+    guestRemaining.textContent = `${safeRemaining} left`;
+    guestModeNote.textContent = safeRemaining > 0
+        ? `Guest mode · text only · ${safeRemaining} question${safeRemaining === 1 ? '' : 's'} left`
+        : 'Guest limit reached · sign in to continue';
+}
+
 function showAuthGate(message = '') {
+    mode = null;
     authGate.hidden = false;
     messages.hidden = true;
     composer.hidden = true;
     account.hidden = true;
+    guestAccount.hidden = true;
+    guestButton.hidden = !guestAvailable;
     authError.textContent = message;
     chat.setAttribute('aria-busy', 'false');
 }
 
+function setEmptyStateForGuest(isGuest) {
+    if (!emptyState) return;
+    const title = emptyState.querySelector('p');
+    const example = emptyState.querySelector('.empty-example');
+    if (!title || !example) return;
+
+    title.textContent = isGuest
+        ? 'Start with a health question.'
+        : 'Start with a health question, or attach a food photo.';
+    example.textContent = isGuest
+        ? 'Guest mode is text-only. Sign in to attach a food photo.'
+        : 'For example: “What should I eat before a run?”';
+}
+
 function showChat() {
+    mode = 'user';
     authGate.hidden = true;
     messages.hidden = false;
     composer.hidden = false;
     account.hidden = false;
+    guestAccount.hidden = true;
+    guestButton.hidden = !guestAvailable;
+    uploadButton.hidden = false;
+    textInput.maxLength = MAX_MESSAGE_CHARS;
+    composerHint.hidden = false;
+    guestModeNote.hidden = true;
+    setEmptyStateForGuest(false);
     authError.textContent = '';
+}
+
+function showGuestChat(remaining, limit = guestLimit) {
+    mode = 'guest';
+    setGuestLimit(limit);
+    authGate.hidden = true;
+    messages.hidden = false;
+    composer.hidden = false;
+    account.hidden = true;
+    guestAccount.hidden = false;
+    guestButton.hidden = !guestAvailable;
+    uploadButton.hidden = true;
+    uploadedImage = null;
+    imageInput.value = '';
+    showAttachment(null);
+    textInput.maxLength = MAX_GUEST_MESSAGE_CHARS;
+    composerHint.hidden = true;
+    guestModeNote.hidden = false;
+    setEmptyStateForGuest(true);
+    setGuestRemaining(remaining);
+    authError.textContent = '';
+}
+
+async function loadGuestSession() {
+    try {
+        const response = await fetch(`${API_BASE}/guest/session`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+            signal: AbortSignal.timeout(10000),
+        });
+        if (!response.ok) return null;
+        return await response.json();
+    } catch {
+        return null;
+    }
 }
 
 async function loadSession() {
@@ -77,9 +172,23 @@ async function loadSession() {
         data = null;
     }
 
+    let guestData = null;
+    if (!(data && data.authenticated === true)) {
+        guestData = await loadGuestSession();
+        guestAvailable = Boolean(guestData && guestData.available === true);
+        if (guestAvailable) {
+            setGuestLimit(guestData.limit);
+        } else if (guestGateNote) {
+            guestGateNote.textContent = 'Guest mode is unavailable right now. Sign in to continue.';
+        }
+    }
+
     if (data && data.authenticated === true) {
         showChat();
         if (params.has('signed_in')) textInput.focus();
+    } else if (guestAvailable && guestData && guestData.guest === true) {
+        showGuestChat(guestData.remaining, guestData.limit);
+        textInput.focus();
     } else {
         const message = params.has('auth_error')
             ? 'Sign-in could not be completed. Please try again.'
@@ -91,6 +200,53 @@ async function loadSession() {
 
     if (window.location.search) {
         window.history.replaceState(null, '', window.location.pathname);
+    }
+}
+
+async function startGuest() {
+    if (busy) return;
+
+    guestButton.disabled = true;
+    guestButton.textContent = 'Starting…';
+
+    try {
+        const response = await fetch(`${API_BASE}/guest/session`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+            signal: AbortSignal.timeout(10000),
+        });
+
+        let data = null;
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            try {
+                data = await response.json();
+            } catch {
+                data = null;
+            }
+        }
+
+        if (!response.ok) {
+            const serverMessage = data && data.error && typeof data.error.message === 'string'
+                ? data.error.message
+                : 'Guest mode is unavailable right now. Please sign in.';
+            throw new Error(serverMessage);
+        }
+
+        if (!data || data.guest !== true) {
+            throw new Error('Guest mode could not be started. Please sign in.');
+        }
+
+        showGuestChat(data.remaining, data.limit);
+        textInput.focus();
+    } catch (error) {
+        authError.textContent = error && error.message
+            ? error.message
+            : 'Guest mode is unavailable right now. Please sign in.';
+    } finally {
+        guestButton.disabled = false;
+        guestButton.textContent = 'Continue as guest';
     }
 }
 
@@ -325,10 +481,10 @@ function extractRequestId(data) {
     return typeof requestId === 'string' && requestId.length <= 64 ? requestId : '';
 }
 
-function trimHistory(turns) {
-    const trimmed = turns.slice(-MAX_HISTORY_TURNS);
+function trimHistory(turns, maxTurns = MAX_HISTORY_TURNS, maxChars = MAX_HISTORY_CHARS) {
+    const trimmed = turns.slice(-maxTurns);
     let totalChars = trimmed.reduce((total, turn) => total + turn.text.length, 0);
-    while (trimmed.length > 0 && totalChars > MAX_HISTORY_CHARS) {
+    while (trimmed.length > 0 && totalChars > maxChars) {
         totalChars -= trimmed.shift().text.length;
     }
     return trimmed;
@@ -337,21 +493,30 @@ function trimHistory(turns) {
 async function sendMessage() {
     if (busy || IS_FILE_PROTOCOL) return;
 
+    const isGuest = mode === 'guest';
+    const maxMessageChars = isGuest ? MAX_GUEST_MESSAGE_CHARS : MAX_MESSAGE_CHARS;
+    const maxHistoryTurns = isGuest ? MAX_GUEST_HISTORY_TURNS : MAX_HISTORY_TURNS;
+    const maxHistoryChars = isGuest ? MAX_GUEST_HISTORY_CHARS : MAX_HISTORY_CHARS;
     const text = textInput.value.trim();
+
+    if (isGuest && uploadedImage) {
+        setError('Guest mode is text-only. Sign in to attach an image.');
+        return;
+    }
     if (!text && !uploadedImage) {
         setError('Type a message or attach an image first.');
         textInput.focus();
         return;
     }
-    if (text.length > MAX_MESSAGE_CHARS) {
-        setError(`Messages are limited to ${MAX_MESSAGE_CHARS} characters.`);
+    if (text.length > maxMessageChars) {
+        setError(`Messages are limited to ${maxMessageChars} characters in this mode.`);
         return;
     }
 
     setError('');
 
-    let attachedFile = uploadedImage;
-    const previousHistory = trimHistory(chatHistory);
+    let attachedFile = isGuest ? null : uploadedImage;
+    const previousHistory = trimHistory(chatHistory, maxHistoryTurns, maxHistoryChars);
     const userBubble = attachedFile
         ? text
             ? `${text}\nImage attached`
@@ -376,13 +541,30 @@ async function sendMessage() {
         showAttachment(attachedFile);
     }
 
-    const formData = new FormData();
-    if (text) formData.append('message', text);
-    if (attachedFile) formData.append('image', attachedFile, attachedFile.name);
-    if (previousHistory.length > 0) formData.append('history', JSON.stringify(previousHistory));
+    const requestOptions = {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+        signal: null,
+    };
+
+    if (isGuest) {
+        requestOptions.headers['Content-Type'] = 'application/json';
+        requestOptions.body = JSON.stringify({
+            message: text,
+            history: previousHistory,
+        });
+    } else {
+        const formData = new FormData();
+        if (text) formData.append('message', text);
+        if (attachedFile) formData.append('image', attachedFile, attachedFile.name);
+        if (previousHistory.length > 0) formData.append('history', JSON.stringify(previousHistory));
+        requestOptions.body = formData;
+    }
 
     let timedOut = false;
     const controller = new AbortController();
+    requestOptions.signal = controller.signal;
     const timeoutId = setTimeout(() => {
         timedOut = true;
         controller.abort();
@@ -391,13 +573,7 @@ async function sendMessage() {
     try {
         let response;
         try {
-            response = await fetch(`${API_BASE}/chat`, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin',
-                headers: { Accept: 'application/json' },
-                signal: controller.signal,
-            });
+            response = await fetch(`${API_BASE}${isGuest ? '/guest/chat' : '/chat'}`, requestOptions);
         } catch (error) {
             if (timedOut) {
                 throw new Error('The request timed out. Please try again.');
@@ -423,6 +599,10 @@ async function sendMessage() {
         }
 
         if (!response.ok) {
+            if (isGuest && data && data.error && data.error.code === 'GUEST_LIMIT_REACHED') {
+                setGuestRemaining(0);
+            }
+
             const requestId = extractRequestId(data);
             const serverMessage =
                 data && data.error && typeof data.error.message === 'string'
@@ -437,6 +617,10 @@ async function sendMessage() {
             throw new Error('The assistant returned an empty response. Please try again.');
         }
 
+        if (isGuest && data && Number.isInteger(data.remaining)) {
+            setGuestRemaining(data.remaining);
+        }
+
         addMessage('assistant', reply);
 
         const historyText = text
@@ -449,6 +633,8 @@ async function sendMessage() {
                 { role: 'user', text: historyText },
                 { role: 'model', text: reply },
             ]),
+            maxHistoryTurns,
+            maxHistoryChars,
         );
     } catch (error) {
         setError(error && error.message ? error.message : 'Something went wrong. Please try again.');
@@ -469,8 +655,10 @@ window.addEventListener('resize', () => {
 });
 
 uploadButton.addEventListener('click', () => {
-    if (!busy) imageInput.click();
+    if (!busy && mode !== 'guest') imageInput.click();
 });
+
+guestButton.addEventListener('click', startGuest);
 
 signOutButton.addEventListener('click', signOut);
 
@@ -479,6 +667,12 @@ if (heroPlay && heroAnimation) {
 }
 
 imageInput.addEventListener('change', () => {
+    if (mode === 'guest') {
+        imageInput.value = '';
+        setError('Guest mode is text-only. Sign in to attach an image.');
+        return;
+    }
+
     const file = imageInput.files && imageInput.files[0];
     if (!file) {
         uploadedImage = null;
@@ -505,6 +699,7 @@ if (IS_FILE_PROTOCOL) {
         'Dr.Health must be opened through its server. Run "npm start" and visit http://localhost:3000.',
     );
     authButton.hidden = true;
+    guestButton.hidden = true;
     sendButton.disabled = true;
     uploadButton.disabled = true;
 } else {

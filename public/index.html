@@ -65,6 +65,11 @@
                     <span class="account-status">Signed in</span>
                     <button type="button" id="signOutButton" class="text-button">Sign out</button>
                 </div>
+                <div id="guestAccount" class="account" hidden>
+                    <span class="account-status">Guest</span>
+                    <span id="guestRemaining" class="guest-remaining"></span>
+                    <a class="text-button" href="/auth/openrouter">Sign in</a>
+                </div>
             </header>
 
             <div id="authGate" class="auth-gate" hidden>
@@ -75,7 +80,13 @@
                     It stays on this server, and only your questions use it.
                 </p>
                 <a id="authButton" class="auth-button" href="/auth/openrouter">Continue with Google</a>
-                <p class="auth-note">One click. No key to copy. Sign out whenever you like.</p>
+                <button type="button" id="guestButton" class="auth-button auth-button-secondary">
+                    Continue as guest
+                </button>
+                <p id="guestGateNote" class="auth-note">
+                    Guest mode is text-only and limited to 5 questions a day.
+                    Sign in for image support and more questions.
+                </p>
                 <p id="authError" class="auth-error" role="alert"></p>
             </div>
 
@@ -124,6 +135,9 @@
                     </button>
                 </form>
                 <p id="composer-hint" class="composer-hint">Enter to send · JPEG, PNG, or WebP up to 5 MB</p>
+                <p id="guestModeNote" class="composer-hint guest-mode-note" aria-live="polite" hidden>
+                    Guest mode · text only · sign in for images
+                </p>
             </div>
         </section>
     </main>

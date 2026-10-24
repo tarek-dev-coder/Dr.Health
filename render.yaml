@@ -27,3 +27,11 @@ services:
         value: "1"
       - key: ENFORCE_HTTPS
         value: "true"
+      - key: GUEST_MODE_ENABLED
+        value: "true"
+      - key: GUEST_DAILY_LIMIT
+        value: "5"
+      - key: GUEST_IP_DAILY_LIMIT
+        value: "10"
+      - key: GUEST_GLOBAL_DAILY_LIMIT
+        value: "200"
