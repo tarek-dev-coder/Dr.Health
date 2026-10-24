@@ -50,6 +50,7 @@ let typingIndicator = null;
 let mode = null;
 let guestAvailable = true;
 let guestLimit = DEFAULT_GUEST_LIMIT;
+let guestExhausted = false;
 
 function setError(message) {
     errorDiv.textContent = message || '';
@@ -70,10 +71,15 @@ function setGuestLimit(limit) {
 
 function setGuestRemaining(remaining) {
     const safeRemaining = Number.isInteger(remaining) ? Math.max(0, remaining) : 0;
+    guestExhausted = safeRemaining <= 0;
     guestRemaining.textContent = `${safeRemaining} left`;
     guestModeNote.textContent = safeRemaining > 0
         ? `Guest mode · text only · ${safeRemaining} question${safeRemaining === 1 ? '' : 's'} left`
         : 'Guest limit reached · sign in to continue';
+
+    if (mode === 'guest') {
+        sendButton.disabled = busy || guestExhausted;
+    }
 }
 
 function showAuthGate(message = '') {
@@ -104,6 +110,7 @@ function setEmptyStateForGuest(isGuest) {
 
 function showChat() {
     mode = 'user';
+    guestExhausted = false;
     authGate.hidden = true;
     messages.hidden = false;
     composer.hidden = false;
@@ -358,7 +365,7 @@ function setBusy(value) {
     } else {
         hideTyping();
     }
-    sendButton.disabled = value;
+    sendButton.disabled = value || (mode === 'guest' && guestExhausted);
     uploadButton.disabled = value;
     chat.setAttribute('aria-busy', String(value));
     messages.setAttribute('aria-busy', String(value));
@@ -499,6 +506,10 @@ async function sendMessage() {
     const maxHistoryChars = isGuest ? MAX_GUEST_HISTORY_CHARS : MAX_HISTORY_CHARS;
     const text = textInput.value.trim();
 
+    if (isGuest && guestExhausted) {
+        setError('Guest limit reached. Sign in to continue.');
+        return;
+    }
     if (isGuest && uploadedImage) {
         setError('Guest mode is text-only. Sign in to attach an image.');
         return;
