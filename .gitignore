@@ -1,0 +1,30 @@
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies
+node_modules/
+
+# Logs and runtime output
+logs/
+*.log
+npm-debug.log*
+coverage/
+.nyc_output/
+
+# Uploads are held in memory only; block accidental disk writes anyway
+uploads/
+tmp/
+temp/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
