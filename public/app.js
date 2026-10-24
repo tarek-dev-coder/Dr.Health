@@ -68,6 +68,7 @@ async function loadSession() {
             method: 'GET',
             credentials: 'same-origin',
             headers: { Accept: 'application/json' },
+            signal: AbortSignal.timeout(10000),
         });
         if (response.ok) {
             data = await response.json();
