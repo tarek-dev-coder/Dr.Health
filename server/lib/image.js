@@ -31,8 +31,8 @@ export function detectImageMime(buffer) {
 }
 
 /**
- * Validate an uploaded image and return a safe Gemini inline data payload.
- * Files stay in memory and are never written to disk.
+ * Validate an uploaded image and return a safe inline data payload for the
+ * model. Files stay in memory and are never written to disk.
  */
 export function validateUploadedImage(file, maxBytes) {
   if (!file || !Buffer.isBuffer(file.buffer)) {
@@ -58,7 +58,7 @@ export function validateUploadedImage(file, maxBytes) {
 
   return {
     mimeType: detected,
-    // Gemini accepts inline base64 payloads.
+    // The server converts this to an OpenAI-compatible image data URL.
     data: file.buffer.toString('base64'),
   };
 }
