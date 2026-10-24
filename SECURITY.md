@@ -78,7 +78,8 @@ The original `index.html` built a Google API key from base64 fragments and calle
 `generativelanguage.googleapis.com` directly. That key was public to every
 visitor and is now removed from the app and the local `.env`. It must be
 **revoked** in Google AI Studio even though the file is gone, because it may
-remain in browser caches, forks, or git history.
+remain in browser caches, forks, or git history. Take down any old static
+deployment that still serves the compromised key.
 
 The current app does not use a shared AI key. Each user signs in through
 OpenRouter OAuth; the server receives a key tied to that user's account and uses

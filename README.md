@@ -5,9 +5,10 @@ language, or upload a photo of a meal, fridge, or medical image.
 
 > **Important:** the old single-file app shipped a Google API key inside
 > `index.html`. That key must be treated as compromised. It has been removed from
-> this project and from the local `.env`; revoke it in Google AI Studio. The app
-> now uses OpenRouter OAuth and each signed-in user's own key, so the owner does
-> not pay for other people's requests.
+> this project and from the local `.env`; revoke it in Google AI Studio. If an old
+> static deployment is still online, take it down. The app now uses OpenRouter
+> OAuth and each signed-in user's own key, so the owner does not pay for other
+> people's requests.
 
 ## How it works
 
