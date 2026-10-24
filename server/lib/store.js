@@ -26,7 +26,7 @@ function getPool() {
   if (!pool) {
     pool = new Pool({
       connectionString: config.databaseUrl,
-      max: 5,
+      max: config.databasePoolMax,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
       ssl: config.databaseSsl ? { rejectUnauthorized: false } : undefined,
