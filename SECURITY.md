@@ -223,6 +223,9 @@ Additional controls:
 - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: no-referrer`, COOP/CORP, and a restrictive
   `Permissions-Policy` are set.
+- On Vercel, `public/**` is served by the CDN and bypasses Express middleware;
+  `vercel.json` applies the equivalent CSP and security headers to those static
+  responses.
 - SVG uploads are rejected, so uploaded content cannot be rendered as active
   markup.
 - Express JSON responses escape HTML-sensitive characters (`json escape`).
@@ -346,11 +349,15 @@ can be added safely.
   quota counters are in memory. Restarting resets guest daily counters and
   invalidates admin sessions; multiple instances require a shared
   session/rate-limit store. User keys persist in Postgres. Guest cookies are
-  signed and survive restarts, but their daily counters do not.
+  signed and survive restarts, but their daily counters do not. On Vercel,
+  functions can run as multiple short-lived instances, so these in-memory
+  counters are weaker than on a single Render process; use a shared store if
+  strict global limits are required.
 - **Database availability:** a database outage prevents sign-in and chat. Use
-  Neon/Render health checks and monitor `store_init_failed` / `request_failed`
-  logs. The current `pg` SSL setting uses `rejectUnauthorized: false` for Neon
-  compatibility; tighten this if your provider supplies a trusted CA.
+  Neon/Supabase and hosting health checks, and monitor `store_init_failed` /
+  `request_failed` logs. The current `pg` SSL setting uses
+  `rejectUnauthorized: false` for managed-Postgres compatibility; tighten this
+  if your provider supplies a trusted CA.
 - **No persistent audit log:** request IDs are returned for support, but logs are
   process output and depend on your platform's retention policy.
 - **No email verification:** no email or address is stored. OpenRouter handles

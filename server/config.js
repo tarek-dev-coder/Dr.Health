@@ -80,6 +80,12 @@ const envSchema = z.object({
   // Postgres is required in production so encrypted user keys survive restarts.
   DATABASE_URL: z.string().trim().min(1).optional(),
   DATABASE_SSL: z.enum(['auto', 'true', 'false']).default('auto'),
+  DATABASE_POOL_MAX: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(process.env.VERCEL ? 1 : 5),
 
   ADMIN_PASSWORD_HASH: z.string().trim().optional(),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters').optional(),
@@ -293,6 +299,7 @@ export const config = Object.freeze({
 
   databaseUrl: env.DATABASE_URL,
   databaseSsl,
+  databasePoolMax: env.DATABASE_POOL_MAX,
 
   adminPasswordHash: env.ADMIN_PASSWORD_HASH,
   sessionSecret: env.SESSION_SECRET,

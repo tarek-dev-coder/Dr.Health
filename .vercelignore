@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules
+test
+coverage
+logs
+*.log
+.git
+.github
+render.yaml

@@ -38,8 +38,8 @@ loads only after Play.
 - Node.js **20.19+** (Node 22/24 recommended)
 - An OpenRouter account for each user (Google/GitHub/email sign-in is available
   on OpenRouter's page)
-- Postgres for production (Neon Free is sufficient); local development can use
-  the in-memory fallback
+- Postgres for production (Neon or Supabase Free is sufficient); local
+  development can use the in-memory fallback
 
 ## Quick start
 
@@ -220,8 +220,9 @@ important ones:
 | `GUEST_MAX_OUTPUT_TOKENS` | `500` | Guest output cap |
 | `GUEST_MAX_MESSAGE_CHARS` | `2000` | Guest message cap |
 | `GUEST_MAX_HISTORY_TURNS` | `4` | Guest history turns |
-| `DATABASE_URL` | — | Required in production; Neon/Postgres connection string |
+| `DATABASE_URL` | - | Required in production; Neon/Supabase/Postgres connection string |
 | `DATABASE_SSL` | `auto` | `auto` uses TLS in production |
+| `DATABASE_POOL_MAX` | `5` (Vercel: `1`) | Postgres pool size; keep at `1` on serverless |
 | `SESSION_SECRET` | — | Required in production; signs OAuth state and user sessions |
 | `KEY_ENCRYPTION_SECRET` | `SESSION_SECRET` | Optional separate AES key; rotating it invalidates saved keys |
 | `USER_SESSION_TTL_MINUTES` | `10080` | User session lifetime (7 days) |
@@ -336,6 +337,58 @@ The built-in rate-limit store, metrics, and admin session registry are in memory
 so they assume a single Node process. Encrypted user keys and user records are in
 Postgres and survive restarts. For multiple instances, move rate limits and admin
 sessions to a shared store such as Redis.
+
+## Deployment: Vercel + Supabase
+
+Vercel can run the Express app as a single function; Supabase provides Postgres.
+The root `index.js` is the Vercel entrypoint, and `vercel.json` sets the function
+duration and security headers. `public/**` is served by Vercel's CDN.
+
+1. Create a Supabase project, then open **Connect** and copy the **Transaction
+   pooler** connection string. It should look like:
+
+   ```text
+   postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-[INDEX]-[REGION].pooler.supabase.com:6543/postgres?sslmode=require
+   ```
+
+2. Import the GitHub repository at **https://vercel.com/new**. Vercel detects
+   Express automatically; do not set a custom build command or output directory.
+
+3. Add these environment variables in the Vercel project:
+
+   ```dotenv
+   NODE_ENV=production
+   APP_ORIGIN=https://your-project.vercel.app
+   OPENROUTER_CALLBACK_URL=https://your-project.vercel.app/auth/callback
+   DATABASE_URL=postgresql://...sslmode=require
+   DATABASE_SSL=true
+   DATABASE_POOL_MAX=1
+   SESSION_SECRET=<48-byte-random-base64url>
+   KEY_ENCRYPTION_SECRET=<another-48-byte-random-base64url>
+   ALLOWED_HOSTS=your-project.vercel.app
+   TRUST_PROXY=1
+   ENFORCE_HTTPS=true
+   OPENROUTER_TIMEOUT_MS=45000
+   GUEST_MODE_ENABLED=true
+   ```
+
+   Keep `DATABASE_POOL_MAX=1` on serverless. `SESSION_SECRET` and
+   `KEY_ENCRYPTION_SECRET` can be generated with:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+   ```
+
+4. Deploy, then open the production URL and complete the OpenRouter callback.
+   Use the production domain, not a preview deployment URL, for `APP_ORIGIN` and
+   the callback.
+
+Vercel functions are short-lived and can run multiple instances. The encrypted
+user key vault is in Supabase and persists, but rate limits, admin sessions, and
+guest quota counters are per function instance. For strict multi-instance limits,
+move those counters to a shared store. Vercel Hobby functions have a 60-second
+limit; `vercel.json` requests 60 seconds and the OpenRouter timeout is reduced to
+45 seconds.
 
 ## Privacy and medical safety
 
