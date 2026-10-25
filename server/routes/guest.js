@@ -30,7 +30,11 @@ function readGuest(req) {
   const token = req.cookies?.[config.guestCookieName];
   const payload = verifyGuestSessionToken(token);
   if (!payload) return null;
-  return { id: payload.sub, expiresAt: payload.exp };
+  return { id: payload.sub };
+}
+
+function sessionPayload(guest, remaining, limit = config.guestDailyLimit) {
+  return { available: true, guest, remaining, limit };
 }
 
 function ensureGuest(req, res, next) {
@@ -59,31 +63,16 @@ guestRouter.use((req, res, next) => {
 guestRouter.get('/session', (req, res) => {
   const guest = readGuest(req);
   if (!guest) {
-    return res.json({
-      available: true,
-      guest: false,
-      remaining: config.guestDailyLimit,
-      limit: config.guestDailyLimit,
-    });
+    return res.json(sessionPayload(false, config.guestDailyLimit));
   }
 
   const quota = getGuestQuota(guest.id, req.ip);
-  return res.json({
-    available: true,
-    guest: true,
-    remaining: quota.remaining,
-    limit: quota.limit,
-  });
+  return res.json(sessionPayload(true, quota.remaining, quota.limit));
 });
 
 guestRouter.post('/session', requireSameOrigin, ensureGuest, (req, res) => {
   const quota = getGuestQuota(req.guest.id, req.ip);
-  return res.json({
-    available: true,
-    guest: true,
-    remaining: quota.remaining,
-    limit: quota.limit,
-  });
+  return res.json(sessionPayload(true, quota.remaining, quota.limit));
 });
 
 guestRouter.post('/chat', requireSameOrigin, guestLimiter, ensureGuest, async (req, res, next) => {

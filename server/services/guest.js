@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import { AppError } from '../lib/errors.js';
-import { logger, serializeError } from '../lib/logger.js';
+import { logger } from '../lib/logger.js';
 
 const GUEST_SYSTEM_PROMPT = `You are Dr.Health, a medical information assistant.
 
@@ -86,7 +86,6 @@ export async function generateGuestReply({ history, message, requestId }) {
 
     logger.debug('guest_request_started', {
       requestId,
-      model: config.guestModel,
       timeoutMs: config.guestTimeoutMs,
     });
 
@@ -120,7 +119,8 @@ export async function generateGuestReply({ history, message, requestId }) {
       logger.error('guest_request_failed', {
         requestId,
         durationMs,
-        error: serializeError(error),
+        errorName: error?.name,
+        errorCode: error?.code,
       });
       throw new AppError(
         503,
@@ -197,5 +197,3 @@ export function resetGuestCircuitForTests() {
   circuitOpenUntil = 0;
   activeRequests = 0;
 }
-
-export { GUEST_SYSTEM_PROMPT };

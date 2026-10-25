@@ -19,7 +19,6 @@ const footerText = document.getElementById('footer-text');
 const heroPlay = document.getElementById('heroPlay');
 const heroAnimation = document.getElementById('heroAnimation');
 const guestRemaining = document.getElementById('guestRemaining');
-const guestModeNote = document.getElementById('guestModeNote');
 const sessionStatus = document.getElementById('sessionStatus');
 const composer = document.getElementById('composer');
 
@@ -33,12 +32,23 @@ function setError(message) {
     errorDiv.textContent = message || '';
 }
 
+async function readJson(response) {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return null;
+    try {
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
 function showSessionError(message) {
     started = false;
     sessionStatus.textContent = message;
     sessionStatus.hidden = false;
     messages.hidden = true;
     composer.hidden = true;
+    sendButton.disabled = true;
     chat.setAttribute('aria-busy', 'false');
 }
 
@@ -46,10 +56,6 @@ function setGuestRemaining(remaining) {
     const safeRemaining = Number.isInteger(remaining) ? Math.max(0, remaining) : 0;
     guestExhausted = safeRemaining <= 0;
     guestRemaining.textContent = `${safeRemaining} left today`;
-    guestModeNote.hidden = false;
-    guestModeNote.textContent = safeRemaining > 0
-        ? `Free text-only chat · ${safeRemaining} question${safeRemaining === 1 ? '' : 's'} left today`
-        : 'Daily limit reached · come back tomorrow';
 
     if (started) {
         sendButton.disabled = busy || guestExhausted;
@@ -73,15 +79,7 @@ async function startGuestSession() {
             signal: AbortSignal.timeout(10000),
         });
 
-        let data = null;
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            try {
-                data = await response.json();
-            } catch {
-                data = null;
-            }
-        }
+        const data = await readJson(response);
 
         if (!response.ok || !data || data.available !== true || data.guest !== true) {
             const serverMessage = data && data.error && typeof data.error.message === 'string'
@@ -303,15 +301,7 @@ async function sendMessage() {
             clearTimeout(timeoutId);
         }
 
-        let data = null;
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            try {
-                data = await response.json();
-            } catch {
-                data = null;
-            }
-        }
+        const data = await readJson(response);
 
         if (!response.ok) {
             if (data && data.error && data.error.code === 'GUEST_LIMIT_REACHED') {

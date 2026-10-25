@@ -34,7 +34,7 @@ function normalizeKey(key) {
   return String(key).toLowerCase().replace(/[_-]/g, '');
 }
 
-export function redact(value, depth = 0) {
+function redact(value, depth = 0) {
   if (depth > 6) return '[depth-limit]';
   if (value === null || value === undefined) return value;
   if (typeof value === 'string') {

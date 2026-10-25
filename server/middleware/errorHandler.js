@@ -13,7 +13,7 @@ export function errorHandler(error, req, res, next) {
   if (error instanceof AppError) {
     status = error.status;
     code = error.code;
-    message = error.expose ? error.message : message;
+    message = error.message;
   } else if (error?.type === 'entity.parse.failed') {
     status = 400;
     code = 'INVALID_JSON';

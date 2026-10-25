@@ -6,7 +6,12 @@ import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { notFound } from './lib/errors.js';
 import { enforceAllowedOrigin } from './lib/origin.js';
-import { securityHeaders, permissionsPolicy, httpsRedirect, hostCheck } from './middleware/security.js';
+import {
+  securityHeaders,
+  permissionsPolicy,
+  httpsRedirect,
+  hostCheck,
+} from './middleware/security.js';
 import { requestContext } from './middleware/requestContext.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -21,11 +26,11 @@ export function createApp() {
   app.set('query parser', 'simple');
   app.set('json escape', true);
 
+  app.use(requestContext);
   app.use(securityHeaders);
   app.use(permissionsPolicy);
   app.use(hostCheck);
   app.use(httpsRedirect);
-  app.use(requestContext);
   app.use(compression({ threshold: 1024 }));
 
   // --- API ---------------------------------------------------------------
@@ -44,7 +49,7 @@ export function createApp() {
   );
   app.use('/api', globalLimiter);
   app.use('/api/guest', express.json({ limit: '16kb', strict: true, type: 'application/json' }));
-  app.use(cookieParser());
+  app.use('/api/guest', cookieParser());
 
   app.use('/api/guest', guestRouter);
   app.use('/api/health', healthRouter);
