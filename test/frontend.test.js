@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, access, stat } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), 'utf8');
 
@@ -15,36 +15,49 @@ test('frontend contains no API keys or direct provider calls', () => {
   assert.ok(!/\bAIza[0-9A-Za-z_-]{20,}\b/.test(combined));
   assert.ok(!combined.includes('generativelanguage.googleapis.com'));
   assert.ok(!combined.includes('openrouter.ai'));
+  assert.ok(!combined.includes('oai.endpoints.kepler.ai.cloud.ovh.net'));
+  assert.ok(!combined.includes('api.llm7.io'));
   assert.ok(!/api[_-]?key/i.test(appJs));
   assert.ok(!/sk-or-v1/i.test(combined));
+  assert.ok(!/Bearer\s+[A-Za-z0-9._-]{8,}/.test(combined));
 });
 
-test('frontend keeps data out of web storage and avoids HTML sinks', () => {
-  assert.ok(!/localStorage|sessionStorage|indexedDB/i.test(appJs));
+test('frontend stores only the theme preference and avoids HTML sinks', () => {
+  assert.ok(!/sessionStorage|indexedDB/i.test(appJs));
   assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/i.test(appJs));
   assert.ok(!/\beval\s*\(|new\s+Function\s*\(/i.test(appJs));
   assert.ok(!/document\.cookie/i.test(appJs));
+
+  const storageCalls = appJs.match(/localStorage\.(?:getItem|setItem)\(([^)]*)\)/g) || [];
+  assert.ok(storageCalls.length > 0);
+  for (const call of storageCalls) {
+    assert.match(call, /THEME_KEY/);
+  }
 });
 
-test('the UI has no sign-in, account, or upload surface', () => {
+test('the UI has no sign-in surface and supports text/code attachments', () => {
   assert.ok(!html.includes('/auth/'));
   assert.ok(!html.includes('Sign in'));
   assert.ok(!html.includes('Continue with Google'));
   assert.ok(!html.includes('authGate'));
   assert.ok(!html.includes('imageInput'));
   assert.ok(!html.includes('uploadButton'));
+  assert.ok(!html.includes('guestRemaining'));
   assert.ok(!appJs.includes('/api/auth'));
-  assert.ok(!appJs.includes('/api/chat'));
+  assert.ok(!appJs.includes('/api/guest'));
   assert.ok(!appJs.includes('signOut'));
   assert.ok(!appJs.includes('authGate'));
-  assert.ok(!appJs.includes('imageInput'));
-  assert.ok(!appJs.includes('uploadButton'));
+
   assert.match(html, /id="chat-form"/);
   assert.match(html, /id="textInput"/);
-  assert.match(html, /id="guestRemaining"/);
+  assert.match(html, /id="fileInput"/);
+  assert.match(html, /id="attachButton"/);
+  assert.match(html, /accept="[^"]*\.js/);
+  assert.match(html, /accept="[^"]*\.md/);
+  assert.ok(!/accept="[^"]*image\//.test(html));
+  assert.match(html, /Chat history is kept in this tab's memory only/);
   assert.ok(!html.includes('Messages are processed by an AI provider'));
   assert.ok(!html.includes('provider may use'));
-  assert.match(html, /Chat history is kept in this tab's memory only/);
 });
 
 test('HTML uses external scripts/styles and no inline handlers', () => {
@@ -54,6 +67,14 @@ test('HTML uses external scripts/styles and no inline handlers', () => {
   assert.ok(!/style\s*=/i.test(html));
   assert.match(html, /<script src="\/app\.js" defer><\/script>/);
   assert.match(html, /<link rel="stylesheet" href="\/styles\.css">/);
+});
+
+test('the dark theme is the default and the light theme is available', () => {
+  assert.match(html, /<html lang="en" data-theme="dark">/);
+  assert.match(html, /id="themeToggle"/);
+  assert.match(styles, /\[data-theme="light"\]/);
+  assert.match(appJs, /saved === 'light' \? 'light' : 'dark'/);
+  assert.match(appJs, /localStorage\.setItem\(THEME_KEY, next\)/);
 });
 
 test('frontend has no third-party resource URLs', () => {
@@ -75,6 +96,10 @@ test('environment files are protected from accidental commits', () => {
   assert.ok(!/^SUPABASE_/m.test(envExample));
   assert.ok(!/^VERCEL_/m.test(envExample));
   assert.ok(!/^ADMIN_/m.test(envExample));
+  assert.match(envExample, /^OVH_BASE_URL=https:\/\/oai\.endpoints\.kepler\.ai\.cloud\.ovh\.net\/v1$/m);
+  assert.match(envExample, /^LLM7_BASE_URL=https:\/\/api\.llm7\.io\/v1$/m);
+  assert.match(envExample, /^OVH_API_KEY=empty-if-anonymous$/m);
+  assert.match(envExample, /^LLM7_API_KEY=unused$/m);
 });
 
 test('the vulnerable single-file entrypoint and deployment files are gone', async () => {
@@ -84,11 +109,10 @@ test('the vulnerable single-file entrypoint and deployment files are gone', asyn
   await assert.rejects(() => access(new URL('../.vercelignore', import.meta.url)));
 });
 
-test('the hero animation has a compressed source and a poster fallback', async () => {
-  const webp = await stat(new URL('../public/assets/health-hero.webp', import.meta.url));
-  await access(new URL('../public/assets/health-hero.gif', import.meta.url));
-  await access(new URL('../public/assets/health-hero-poster.jpg', import.meta.url));
-  assert.ok(webp.size < 2 * 1024 * 1024, 'animated WebP should stay below 2 MB');
-  assert.match(html, /<source srcset="\/assets\/health-hero\.webp" type="image\/webp">/);
-  assert.match(html, /src="\/assets\/health-hero\.gif"/);
+test('the intro artwork is handcrafted inline SVG, not a generated image', () => {
+  assert.match(html, /class="hero-art"/);
+  assert.match(html, /<svg viewBox="0 0 480 270"/);
+  assert.ok(!/<img\b/i.test(html));
+  assert.ok(!html.includes('health-hero'));
+  assert.ok(!/url\(['"]?\/assets\//.test(styles));
 });

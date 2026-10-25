@@ -11,12 +11,14 @@ const server = app.listen(config.port, () => {
     httpsEnforced: config.enforceHttps,
     allowedOrigins: config.allowedOrigins.length,
     allowedHosts: config.allowedHosts.length,
+    providers: 2,
+    chatTimeoutMs: config.chatTimeoutMs,
   });
 });
 
 // Basic slowloris / resource-exhaustion limits.
 server.headersTimeout = 20000;
-server.requestTimeout = Math.max(45000, config.guestTimeoutMs + 15000);
+server.requestTimeout = Math.max(60000, config.chatTimeoutMs + 15000);
 server.keepAliveTimeout = 5000;
 server.maxHeadersCount = 100;
 

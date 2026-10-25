@@ -23,8 +23,8 @@ export const globalLimiter = rateLimit({
   limit: config.globalRateLimit,
 });
 
-export const guestLimiter = rateLimit({
+export const chatLimiter = rateLimit({
   ...shared,
-  windowMs: config.guestRateWindowMs,
-  limit: config.guestRateLimit,
+  windowMs: config.chatRateWindowMs,
+  limit: config.chatRateLimit,
 });

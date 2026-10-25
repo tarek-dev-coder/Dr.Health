@@ -1,32 +1,36 @@
 'use strict';
 
 const API_BASE = '/api';
-const MAX_MESSAGE_CHARS = 2000;
-const MAX_HISTORY_TURNS = 4;
-const MAX_HISTORY_CHARS = 4000;
-const REQUEST_TIMEOUT_MS = 75000;
-const IS_FILE_PROTOCOL = window.location.protocol === 'file:';
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_HISTORY_TURNS = 12;
+const MAX_HISTORY_CHARS = 48000;
+const MAX_FILE_BYTES = 256 * 1024;
+const MAX_FILE_CHARS = 24000;
+const REQUEST_TIMEOUT_MS = 90000;
+const THEME_KEY = 'dh-theme';
 
 const chat = document.getElementById('chat');
 const messages = document.getElementById('messages');
 const chatForm = document.getElementById('chat-form');
 const textInput = document.getElementById('textInput');
 const sendButton = document.getElementById('sendButton');
+const attachButton = document.getElementById('attachButton');
+const fileInput = document.getElementById('fileInput');
+const fileChip = document.getElementById('fileChip');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const removeFileButton = document.getElementById('removeFileButton');
 const loader = document.getElementById('loader');
 const errorDiv = document.getElementById('error');
 const emptyState = document.getElementById('emptyState');
 const footerText = document.getElementById('footer-text');
-const heroPlay = document.getElementById('heroPlay');
-const heroAnimation = document.getElementById('heroAnimation');
-const guestRemaining = document.getElementById('guestRemaining');
-const sessionStatus = document.getElementById('sessionStatus');
-const composer = document.getElementById('composer');
+const themeToggle = document.getElementById('themeToggle');
+const newChatButton = document.getElementById('newChatButton');
 
 let chatHistory = [];
+let selectedFile = null;
 let busy = false;
 let typingIndicator = null;
-let started = false;
-let guestExhausted = false;
 
 function setError(message) {
     errorDiv.textContent = message || '';
@@ -42,67 +46,99 @@ async function readJson(response) {
     }
 }
 
-function showSessionError(message) {
-    started = false;
-    sessionStatus.textContent = message;
-    sessionStatus.hidden = false;
-    messages.hidden = true;
-    composer.hidden = true;
-    sendButton.disabled = true;
-    chat.setAttribute('aria-busy', 'false');
+function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function setGuestRemaining(remaining) {
-    const safeRemaining = Number.isInteger(remaining) ? Math.max(0, remaining) : 0;
-    guestExhausted = safeRemaining <= 0;
-    guestRemaining.textContent = `${safeRemaining} left today`;
+function applyTheme(theme) {
+    const next = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    themeToggle.setAttribute(
+        'aria-label',
+        next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
+    );
+    themeToggle.setAttribute('aria-pressed', String(next === 'light'));
 
-    if (started) {
-        sendButton.disabled = busy || guestExhausted;
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) {
+        themeColor.setAttribute('content', next === 'dark' ? '#0d1210' : '#f4f0e7');
     }
 }
 
-function showChat() {
-    started = true;
-    sessionStatus.hidden = true;
-    messages.hidden = false;
-    composer.hidden = false;
-    textInput.maxLength = MAX_MESSAGE_CHARS;
-}
-
-async function startGuestSession() {
+function initTheme() {
+    let saved = null;
     try {
-        const response = await fetch(`${API_BASE}/guest/session`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-            signal: AbortSignal.timeout(10000),
-        });
-
-        const data = await readJson(response);
-
-        if (!response.ok || !data || data.available !== true || data.guest !== true) {
-            const serverMessage = data && data.error && typeof data.error.message === 'string'
-                ? data.error.message
-                : 'Chat is unavailable right now. Please refresh the page.';
-            throw new Error(serverMessage);
-        }
-
-        showChat();
-        setGuestRemaining(data.remaining);
-        textInput.focus();
-    } catch (error) {
-        showSessionError(
-            error && error.message
-                ? error.message
-                : 'Could not reach the Dr.Health server. Please refresh the page.',
-        );
+        saved = localStorage.getItem(THEME_KEY);
+    } catch {
+        saved = null;
     }
+    applyTheme(saved === 'light' ? 'light' : 'dark');
+}
+
+function showFileChip(file) {
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    fileChip.hidden = false;
+}
+
+function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileChip.hidden = true;
+    fileName.textContent = '';
+    fileSize.textContent = '';
+}
+
+function scrollMessagesToBottom() {
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function isNearBottom() {
+    return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
 }
 
 const INLINE_TOKEN = /(\*\*[^*\n]+\*\*|__[^_\n]+__|`[^`\n]+`)/g;
+const CODE_LANGUAGES = new Set([
+    'bash',
+    'c',
+    'cpp',
+    'csharp',
+    'css',
+    'diff',
+    'go',
+    'html',
+    'http',
+    'java',
+    'javascript',
+    'js',
+    'json',
+    'jsx',
+    'markdown',
+    'md',
+    'php',
+    'plaintext',
+    'powershell',
+    'ps1',
+    'python',
+    'py',
+    'ruby',
+    'rust',
+    'sh',
+    'shell',
+    'sql',
+    'text',
+    'ts',
+    'tsx',
+    'txt',
+    'typescript',
+    'xml',
+    'yaml',
+    'yml',
+]);
 
-function appendFormattedText(parent, text) {
+function appendInlineText(parent, text) {
     const normalized = text.replace(/^([ \t]*)[*-][ \t]+/gm, '$1• ');
     let lastIndex = 0;
     for (const match of normalized.matchAll(INLINE_TOKEN)) {
@@ -123,12 +159,23 @@ function appendFormattedText(parent, text) {
     }
 }
 
-function scrollMessagesToBottom() {
-    messages.scrollTop = messages.scrollHeight;
-}
-
-function isNearBottom() {
-    return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
+function appendFormattedText(parent, text) {
+    const segments = text.split(/```/);
+    segments.forEach((segment, index) => {
+        if (index % 2 === 1) {
+            const lines = segment.replace(/^\n/, '').split('\n');
+            const firstLine = lines[0].trim();
+            const hasLanguage = CODE_LANGUAGES.has(firstLine.toLowerCase());
+            const code = (hasLanguage ? lines.slice(1) : lines).join('\n').replace(/\n$/, '');
+            const pre = document.createElement('pre');
+            const codeElement = document.createElement('code');
+            codeElement.textContent = code;
+            pre.appendChild(codeElement);
+            parent.appendChild(pre);
+        } else {
+            appendInlineText(parent, segment);
+        }
+    });
 }
 
 function addMessage(role, content) {
@@ -192,40 +239,14 @@ function setBusy(value) {
     } else {
         hideTyping();
     }
-    sendButton.disabled = value || guestExhausted || !started;
+
+    sendButton.disabled = value;
+    attachButton.disabled = value;
+    removeFileButton.disabled = value;
+    textInput.disabled = value;
+    newChatButton.disabled = value;
     chat.setAttribute('aria-busy', String(value));
     messages.setAttribute('aria-busy', String(value));
-}
-
-function playHeroAnimation() {
-    if (!heroAnimation || !heroPlay) return;
-
-    const image = heroAnimation.querySelector('img');
-    const reveal = () => heroAnimation.classList.add('is-visible');
-    const restore = () => {
-        heroAnimation.hidden = true;
-        heroPlay.hidden = false;
-    };
-
-    heroPlay.hidden = true;
-    heroAnimation.hidden = false;
-
-    if (!image) {
-        reveal();
-        return;
-    }
-
-    if (image.complete) {
-        if (image.naturalWidth > 0) {
-            reveal();
-        } else {
-            restore();
-        }
-        return;
-    }
-
-    image.addEventListener('load', reveal, { once: true });
-    image.addEventListener('error', restore, { once: true });
 }
 
 function extractRequestId(data) {
@@ -242,17 +263,46 @@ function trimHistory(turns) {
     return trimmed;
 }
 
+async function readFileText(file) {
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let decoder = new TextDecoder('utf-8');
+
+    if (bytes[0] === 0xff && bytes[1] === 0xfe) {
+        decoder = new TextDecoder('utf-16le');
+    } else if (bytes[0] === 0xfe && bytes[1] === 0xff) {
+        decoder = new TextDecoder('utf-16be');
+    }
+
+    return decoder.decode(buffer).replace(/^\uFEFF/, '');
+}
+
+function buildHistoryText(text, file, fileText) {
+    const longestFence = Math.max(
+        3,
+        ...(fileText.match(/`{3,}/g) || []).map((run) => run.length + 1),
+    );
+    const fence = '`'.repeat(longestFence);
+    return `${text || 'Analyze the attached file.'}\n\nAttached file: ${file.name}\n\n${fence}\n${fileText}\n${fence}`;
+}
+
+function resetChat() {
+    if (busy) return;
+    chatHistory = [];
+    setError('');
+    clearFile();
+    textInput.value = '';
+    messages.replaceChildren(emptyState);
+    textInput.focus();
+}
+
 async function sendMessage() {
-    if (busy || !started || IS_FILE_PROTOCOL) return;
+    if (busy) return;
 
     const text = textInput.value.trim();
 
-    if (guestExhausted) {
-        setError('Daily question limit reached. Please come back tomorrow.');
-        return;
-    }
-    if (!text) {
-        setError('Type a question first.');
+    if (!text && !selectedFile) {
+        setError('Type a question or attach a text/code file.');
         textInput.focus();
         return;
     }
@@ -264,7 +314,33 @@ async function sendMessage() {
     setError('');
 
     const previousHistory = trimHistory(chatHistory);
-    addMessage('user', text);
+    const attachedName = selectedFile ? selectedFile.name : '';
+    const userLabel = selectedFile
+        ? `${text || 'Analyze the attached file.'}\n[Attached: ${attachedName}]`
+        : text;
+
+    let fileText = '';
+    if (selectedFile) {
+        try {
+            fileText = await readFileText(selectedFile);
+        } catch {
+            fileText = '';
+        }
+        if (fileText.length > MAX_FILE_CHARS) {
+            setError(`Files are limited to ${MAX_FILE_CHARS.toLocaleString('en-US')} characters.`);
+            return;
+        }
+    }
+
+    const historyUserText =
+        selectedFile && fileText ? buildHistoryText(text, selectedFile, fileText) : userLabel;
+
+    addMessage('user', userLabel);
+
+    const formData = new FormData();
+    if (text) formData.append('message', text);
+    if (selectedFile) formData.append('file', selectedFile, selectedFile.name);
+    if (previousHistory.length > 0) formData.append('history', JSON.stringify(previousHistory));
 
     textInput.value = '';
     setBusy(true);
@@ -279,17 +355,11 @@ async function sendMessage() {
     try {
         let response;
         try {
-            response = await fetch(`${API_BASE}/guest/chat`, {
+            response = await fetch(`${API_BASE}/chat`, {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: text,
-                    history: previousHistory,
-                }),
+                headers: { Accept: 'application/json' },
+                body: formData,
                 signal: controller.signal,
             });
         } catch {
@@ -304,10 +374,6 @@ async function sendMessage() {
         const data = await readJson(response);
 
         if (!response.ok) {
-            if (data && data.error && data.error.code === 'GUEST_LIMIT_REACHED') {
-                setGuestRemaining(0);
-            }
-
             const requestId = extractRequestId(data);
             const serverMessage =
                 data && data.error && typeof data.error.message === 'string'
@@ -322,18 +388,14 @@ async function sendMessage() {
             throw new Error('The assistant returned an empty response. Please try again.');
         }
 
-        if (data && Number.isInteger(data.remaining)) {
-            setGuestRemaining(data.remaining);
-        }
-
         addMessage('assistant', reply);
-
         chatHistory = trimHistory(
             previousHistory.concat([
-                { role: 'user', text },
+                { role: 'user', text: historyUserText },
                 { role: 'model', text: reply },
             ]),
         );
+        clearFile();
     } catch (error) {
         setError(error && error.message ? error.message : 'Something went wrong. Please try again.');
     } finally {
@@ -342,25 +404,71 @@ async function sendMessage() {
     }
 }
 
+themeToggle.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try {
+        localStorage.setItem(THEME_KEY, next);
+    } catch {
+        // Theme persistence is optional.
+    }
+});
+
 chatForm.addEventListener('submit', (event) => {
     event.preventDefault();
     sendMessage();
 });
 
+textInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        chatForm.requestSubmit();
+    }
+});
+
+textInput.addEventListener('input', () => {
+    if (errorDiv.textContent) setError('');
+});
+
+attachButton.addEventListener('click', () => {
+    if (!busy) fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+        clearFile();
+        return;
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+        clearFile();
+        setError(`Files are limited to ${formatBytes(MAX_FILE_BYTES)}.`);
+        return;
+    }
+
+    selectedFile = file;
+    showFileChip(file);
+    setError('');
+});
+
+removeFileButton.addEventListener('click', () => {
+    clearFile();
+    setError('');
+});
+
+newChatButton.addEventListener('click', resetChat);
+
+for (const chip of document.querySelectorAll('[data-prompt]')) {
+    chip.addEventListener('click', () => {
+        textInput.value = chip.dataset.prompt || '';
+        textInput.focus();
+    });
+}
+
 window.addEventListener('resize', () => {
     if (isNearBottom()) scrollMessagesToBottom();
 });
 
-if (heroPlay && heroAnimation) {
-    heroPlay.addEventListener('click', playHeroAnimation);
-}
-
-if (IS_FILE_PROTOCOL) {
-    showSessionError(
-        'Dr.Health must be opened through its server. Run "npm start" and visit http://localhost:3000.',
-    );
-} else {
-    startGuestSession();
-}
-
+initTheme();
 footerText.textContent = `© ${new Date().getFullYear()} Dr.Health. All rights reserved.`;

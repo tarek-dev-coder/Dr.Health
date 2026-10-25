@@ -2,7 +2,6 @@ import path from 'node:path';
 import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { notFound } from './lib/errors.js';
 import { enforceAllowedOrigin } from './lib/origin.js';
@@ -16,7 +15,7 @@ import { requestContext } from './middleware/requestContext.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
-import { guestRouter } from './routes/guest.js';
+import { chatRouter } from './routes/chat.js';
 
 export function createApp() {
   const app = express();
@@ -39,7 +38,7 @@ export function createApp() {
     '/api',
     cors({
       origin: true,
-      credentials: true,
+      credentials: false,
       methods: ['GET', 'POST', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Accept', 'X-Request-Id'],
       exposedHeaders: ['X-Request-Id', 'RateLimit', 'RateLimit-Policy', 'Retry-After'],
@@ -48,10 +47,9 @@ export function createApp() {
     }),
   );
   app.use('/api', globalLimiter);
-  app.use('/api/guest', express.json({ limit: '16kb', strict: true, type: 'application/json' }));
-  app.use('/api/guest', cookieParser());
+  app.use('/api/chat', express.json({ limit: '256kb', strict: true, type: 'application/json' }));
 
-  app.use('/api/guest', guestRouter);
+  app.use('/api/chat', chatRouter);
   app.use('/api/health', healthRouter);
 
   app.use('/api', (req, res, next) => next(notFound('API endpoint not found.')));
