@@ -283,7 +283,7 @@ function buildHistoryText(text, file, fileText) {
         ...(fileText.match(/`{3,}/g) || []).map((run) => run.length + 1),
     );
     const fence = '`'.repeat(longestFence);
-    return `${text || 'Analyze the attached file.'}\n\nAttached file: ${file.name}\n\n${fence}\n${fileText}\n${fence}`;
+    return `${text || 'Look at the attached file.'}\n\nAttached file: ${file.name}\n\n${fence}\n${fileText}\n${fence}`;
 }
 
 function resetChat() {
@@ -302,12 +302,12 @@ async function sendMessage() {
     const text = textInput.value.trim();
 
     if (!text && !selectedFile) {
-        setError('Type a question or attach a text/code file.');
+        setError('Type a question or add a text or code file.');
         textInput.focus();
         return;
     }
     if (text.length > MAX_MESSAGE_CHARS) {
-        setError(`Messages are limited to ${MAX_MESSAGE_CHARS} characters.`);
+        setError(`Your message is too long. Keep it under ${MAX_MESSAGE_CHARS} characters.`);
         return;
     }
 
@@ -316,7 +316,7 @@ async function sendMessage() {
     const previousHistory = trimHistory(chatHistory);
     const attachedName = selectedFile ? selectedFile.name : '';
     const userLabel = selectedFile
-        ? `${text || 'Analyze the attached file.'}\n[Attached: ${attachedName}]`
+        ? `${text || 'Look at the attached file.'}\n[Attached: ${attachedName}]`
         : text;
 
     let fileText = '';
@@ -327,7 +327,7 @@ async function sendMessage() {
             fileText = '';
         }
         if (fileText.length > MAX_FILE_CHARS) {
-            setError(`Files are limited to ${MAX_FILE_CHARS.toLocaleString('en-US')} characters.`);
+            setError(`That file is too long. Keep it under ${MAX_FILE_CHARS.toLocaleString('en-US')} characters.`);
             return;
         }
     }
@@ -364,9 +364,9 @@ async function sendMessage() {
             });
         } catch {
             if (timedOut) {
-                throw new Error('The request timed out. Please try again.');
+                throw new Error('This is taking too long. Please try again.');
             }
-            throw new Error('Could not reach the Dr.Health server. Please check your connection and try again.');
+            throw new Error('Could not connect. Check your internet and try again.');
         } finally {
             clearTimeout(timeoutId);
         }
@@ -378,14 +378,14 @@ async function sendMessage() {
             const serverMessage =
                 data && data.error && typeof data.error.message === 'string'
                     ? data.error.message
-                    : 'The request failed. Please try again.';
+                    : 'That did not work. Please try again.';
             const reference = requestId ? ` (ref: ${requestId})` : '';
             throw new Error(`${serverMessage}${reference}`);
         }
 
         const reply = data && typeof data.reply === 'string' ? data.reply.trim() : '';
         if (!reply) {
-            throw new Error('The assistant returned an empty response. Please try again.');
+            throw new Error('No answer came back. Please try again.');
         }
 
         addMessage('assistant', reply);
@@ -443,7 +443,7 @@ fileInput.addEventListener('change', () => {
 
     if (file.size > MAX_FILE_BYTES) {
         clearFile();
-        setError(`Files are limited to ${formatBytes(MAX_FILE_BYTES)}.`);
+        setError(`That file is too big. The limit is ${formatBytes(MAX_FILE_BYTES)}.`);
         return;
     }
 

@@ -220,7 +220,7 @@ function decodeText(buffer) {
     return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
   } catch {
     throw unsupportedMedia(
-      'That file does not look like text. Upload a plain text or code file.',
+      'That file is not text. Add a text or code file instead.',
       'UNSUPPORTED_FILE',
     );
   }
@@ -231,7 +231,7 @@ export function parseTextFile(file, { maxBytes, maxChars }) {
 
   if (file.size > maxBytes) {
     throw payloadTooLarge(
-      `The file is too large. The limit is ${Math.round(maxBytes / 1024)} KB.`,
+      `That file is too big. The limit is ${Math.round(maxBytes / 1024)} KB.`,
       'FILE_TOO_LARGE',
     );
   }
@@ -242,37 +242,37 @@ export function parseTextFile(file, { maxBytes, maxChars }) {
 
   if (isBlockedName(name, extension)) {
     throw unsupportedMedia(
-      'For safety, environment files and private key files are not accepted.',
+      'For safety, .env and private key files are not allowed.',
       'UNSUPPORTED_FILE',
     );
   }
 
   if (BINARY_EXTENSIONS.has(extension) && !isSpecialText) {
     throw unsupportedMedia(
-      'Images, PDFs, office documents, audio, and video are not supported. Upload a text or code file.',
+      'Images, PDFs, office files, audio, and video are not supported. Add a text or code file instead.',
       'UNSUPPORTED_FILE',
     );
   }
 
   if (!file.buffer || file.buffer.length === 0) {
-    throw badRequest('The file is empty.', 'EMPTY_FILE');
+    throw badRequest('That file is empty.', 'EMPTY_FILE');
   }
 
   if (file.buffer.includes(0) && !(file.buffer[0] === 0xff || file.buffer[0] === 0xfe)) {
     throw unsupportedMedia(
-      'That file does not look like text. Upload a plain text or code file.',
+      'That file is not text. Add a text or code file instead.',
       'UNSUPPORTED_FILE',
     );
   }
 
   const content = decodeText(file.buffer).replace(/^\uFEFF/, '').replace(/\u0000/g, '').trim();
   if (!content) {
-    throw badRequest('The file is empty.', 'EMPTY_FILE');
+    throw badRequest('That file is empty.', 'EMPTY_FILE');
   }
 
   if (content.length > maxChars) {
     throw payloadTooLarge(
-      `The file is too long. The limit is ${maxChars.toLocaleString('en-US')} characters.`,
+      `That file is too long. Keep it under ${maxChars.toLocaleString('en-US')} characters.`,
       'FILE_TOO_LONG',
     );
   }

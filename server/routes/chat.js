@@ -50,7 +50,7 @@ chatRouter.post(
         req.body?.imageData !== undefined
       ) {
         throw unsupportedMedia(
-          'Images are not supported. Attach a text or code file instead.',
+          'Images are not supported. Add a text or code file instead.',
           'UNSUPPORTED_MEDIA_TYPE',
         );
       }
@@ -64,7 +64,7 @@ chatRouter.post(
         : null;
 
       if (!message && !file) {
-        throw badRequest('Provide a message or a text/code file.', 'MESSAGE_REQUIRED');
+        throw badRequest('Type a message or add a text or code file.', 'MESSAGE_REQUIRED');
       }
 
       const history = parseHistory(req.body?.history, {

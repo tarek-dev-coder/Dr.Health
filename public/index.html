@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dr.Health turns complicated health questions into clear, evidence-led answers. Direct, private, and built for real life.">
+    <meta name="description" content="Dr.Health gives clear, simple answers to your health questions. Free, private, and easy to use.">
     <meta name="color-scheme" content="dark light">
     <meta name="theme-color" content="#0d1210">
     <title>Dr.Health — Health, made clear</title>
@@ -45,17 +45,17 @@
                 <div class="chat-heading">
                     <p class="section-label">Ask Dr.Health</p>
                     <h1>Health, made clear.</h1>
-                    <p class="chat-note">Direct answers · Evidence-led · No judgment</p>
+                    <p class="chat-note">Clear answers · No judgment</p>
                 </div>
                 <button type="button" id="newChatButton" class="ghost-button">New chat</button>
             </header>
 
             <div id="messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Conversation">
                 <div id="emptyState" class="empty-state">
-                    <p class="empty-title">What do you want to understand?</p>
+                    <p class="empty-title">What do you want to ask?</p>
                     <p class="empty-copy">
-                        Ask about symptoms, nutrition, fitness, first aid, or the question
-                        you keep circling. Attach a text or code file when it helps.
+                        Ask about how you feel, food, exercise, first aid, or anything
+                        else about your health. You can attach a text or code file.
                     </p>
                     <div class="prompt-chips" aria-label="Example questions">
                         <button type="button" class="prompt-chip" data-prompt="Why am I always tired?">Why am I always tired?</button>
@@ -71,7 +71,7 @@
                     <span id="fileSize" class="file-size"></span>
                     <button type="button" id="removeFileButton" class="file-remove" aria-label="Remove attached file">×</button>
                 </div>
-                <p id="loader" class="sr-only" role="status" hidden>Thinking… this can take up to a minute.</p>
+                <p id="loader" class="sr-only" role="status" hidden>Thinking… this may take a minute.</p>
                 <p id="error" class="error" role="alert"></p>
 
                 <form id="chat-form" novalidate>
@@ -109,19 +109,18 @@
                     </div>
                 </form>
                 <p id="composer-hint" class="composer-hint">
-                    Enter to send · Shift+Enter for a new line · Text/code files up to 24,000 characters
+                    Enter to send · Shift+Enter for a new line · Files up to 24,000 characters
                 </p>
             </div>
         </section>
 
         <aside class="intro" aria-labelledby="about-title">
             <div class="intro-copy">
-                <p class="eyebrow">Health, without the noise</p>
+                <p class="eyebrow">Why Dr.Health</p>
                 <h2 id="about-title">Your health, explained simply.</h2>
                 <p class="lede">
-                    Dr.Health cuts through conflicting advice with direct, evidence-led
-                    answers on nutrition, fitness, first aid, and everyday wellness.
-                    No lectures. No judgment. Just a clearer next step.
+                    Dr.Health gives you clear answers about food, exercise, first aid,
+                    and everyday health. No lectures. No judgment. Just a clear next step.
                 </p>
             </div>
 
@@ -148,20 +147,19 @@
             </figure>
 
             <div class="info-card info-card-topics">
-                <p class="section-label">Good for</p>
+                <p class="section-label">You can ask about</p>
                 <ul class="topic-list">
-                    <li>Nutrition that fits real life</li>
-                    <li>Training, recovery, and sleep</li>
-                    <li>First aid, explained calmly</li>
-                    <li>Text and code file analysis</li>
+                    <li>Food and healthy eating</li>
+                    <li>Exercise, rest, and sleep</li>
+                    <li>First aid, step by step</li>
+                    <li>Text and code files</li>
                 </ul>
             </div>
 
             <div class="info-card info-card-files">
                 <p class="section-label">Files</p>
                 <p class="info-copy">
-                    Attach plain text, Markdown, CSV, JSON, logs, or source code.
-                    Text and code only. Dr.Health works from what's in the file.
+                    Attach a text or code file. Dr.Health reads it and answers.
                 </p>
             </div>
 
@@ -171,7 +169,7 @@
     <footer class="page-footer">
         <p id="footer-text">© 2026 Dr.Health. All rights reserved.</p>
         <p class="privacy">
-            Chat history and files: in memory, never stored.
+            Chats and files are not saved.
         </p>
     </footer>
 

@@ -55,7 +55,7 @@ test('the UI has no sign-in surface and supports text/code attachments', () => {
   assert.match(html, /accept="[^"]*\.js/);
   assert.match(html, /accept="[^"]*\.md/);
   assert.ok(!/accept="[^"]*image\//.test(html));
-  assert.match(html, /Chat history and files: in memory, never stored\./);
+  assert.match(html, /Chats and files are not saved\./);
   assert.ok(!html.includes('Emergency? Call your local emergency number first.'));
   assert.ok(!html.includes('Messages are processed by an AI provider'));
   assert.ok(!html.includes('provider may use'));
@@ -65,7 +65,13 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('General health information'));
   assert.ok(!html.includes('General information only'));
   assert.ok(!html.includes('does not diagnose or prescribe'));
+  assert.ok(!html.includes('evidence-led'));
+  assert.ok(!html.includes('in memory'));
+  assert.ok(!html.includes('nutrition'));
+  assert.ok(!html.includes('wellness'));
   assert.match(html, /Health, made clear\./);
+  assert.match(html, /What do you want to ask\?/);
+  assert.match(html, /Chats and files are not saved\./);
 });
 
 test('HTML uses external scripts/styles and no inline handlers', () => {
