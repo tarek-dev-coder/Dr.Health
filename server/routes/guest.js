@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { config, isGuestConfigured } from '../config.js';
+import { config } from '../config.js';
 import { AppError, badRequest } from '../lib/errors.js';
 import { parseHistory, parseMessage } from '../lib/chatInput.js';
 import { consumeGuestQuota, getGuestQuota } from '../lib/guestQuota.js';
@@ -9,7 +9,7 @@ import {
 } from '../lib/guestSession.js';
 import { logger } from '../lib/logger.js';
 import { generateGuestReply } from '../services/guest.js';
-import { requireSameOrigin } from '../middleware/auth.js';
+import { requireSameOrigin } from '../middleware/sameOrigin.js';
 import { guestLimiter } from '../middleware/rateLimits.js';
 
 const guestCookieOptions = Object.freeze({
@@ -34,12 +34,6 @@ function readGuest(req) {
 }
 
 function ensureGuest(req, res, next) {
-  if (!isGuestConfigured) {
-    return next(
-      new AppError(503, 'GUEST_DISABLED', 'Guest mode is not available on this server.'),
-    );
-  }
-
   let guest = readGuest(req);
   if (!guest) {
     const token = createGuestSessionToken();
@@ -48,7 +42,7 @@ function ensureGuest(req, res, next) {
   }
 
   if (!guest) {
-    return next(new AppError(503, 'GUEST_UNAVAILABLE', 'Guest mode could not be started.'));
+    return next(new AppError(503, 'GUEST_UNAVAILABLE', 'Chat is unavailable right now.'));
   }
 
   req.guest = guest;
@@ -63,10 +57,6 @@ guestRouter.use((req, res, next) => {
 });
 
 guestRouter.get('/session', (req, res) => {
-  if (!isGuestConfigured) {
-    return res.json({ available: false, guest: false });
-  }
-
   const guest = readGuest(req);
   if (!guest) {
     return res.json({
@@ -100,7 +90,7 @@ guestRouter.post('/chat', requireSameOrigin, guestLimiter, ensureGuest, async (r
   try {
     if (req.body?.image !== undefined) {
       throw badRequest(
-        'Guest mode is text-only. Sign in to ask about an image.',
+        'This assistant is text-only and cannot view images.',
         'GUEST_TEXT_ONLY',
       );
     }
@@ -121,7 +111,7 @@ guestRouter.post('/chat', requireSameOrigin, guestLimiter, ensureGuest, async (r
       throw new AppError(
         429,
         'GUEST_LIMIT_REACHED',
-        'Guest limit reached. Sign in to continue.',
+        'Daily question limit reached. Please come back tomorrow.',
         { retryAfterSeconds: quota.retryAfterSeconds },
       );
     }

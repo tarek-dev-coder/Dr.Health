@@ -19,17 +19,29 @@ test('frontend contains no API keys or direct provider calls', () => {
   assert.ok(!/sk-or-v1/i.test(combined));
 });
 
-test('frontend keeps session data out of web storage and avoids HTML sinks', () => {
+test('frontend keeps data out of web storage and avoids HTML sinks', () => {
   assert.ok(!/localStorage|sessionStorage|indexedDB/i.test(appJs));
   assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/i.test(appJs));
   assert.ok(!/\beval\s*\(|new\s+Function\s*\(/i.test(appJs));
   assert.ok(!/document\.cookie/i.test(appJs));
 });
 
-test('the sign-in gate is same-origin and the provider-disclosure sentence is gone', () => {
-  assert.match(html, /id="authGate"/);
-  assert.match(html, /href="\/auth\/openrouter"/);
-  assert.match(html, /Continue with Google/);
+test('the UI has no sign-in, account, or upload surface', () => {
+  assert.ok(!html.includes('/auth/'));
+  assert.ok(!html.includes('Sign in'));
+  assert.ok(!html.includes('Continue with Google'));
+  assert.ok(!html.includes('authGate'));
+  assert.ok(!html.includes('imageInput'));
+  assert.ok(!html.includes('uploadButton'));
+  assert.ok(!appJs.includes('/api/auth'));
+  assert.ok(!appJs.includes('/api/chat'));
+  assert.ok(!appJs.includes('signOut'));
+  assert.ok(!appJs.includes('authGate'));
+  assert.ok(!appJs.includes('imageInput'));
+  assert.ok(!appJs.includes('uploadButton'));
+  assert.match(html, /id="chat-form"/);
+  assert.match(html, /id="textInput"/);
+  assert.match(html, /id="guestRemaining"/);
   assert.ok(!html.includes('Messages are processed by an AI provider'));
   assert.ok(!html.includes('provider may use'));
   assert.match(html, /Chat history is kept in this tab's memory only/);
@@ -56,16 +68,20 @@ test('environment files are protected from accidental commits', () => {
   assert.ok(ignored.includes('.env.*'));
   assert.ok(ignored.includes('node_modules/'));
   assert.ok(!/AIza/.test(envExample));
-  assert.ok(!/^GEMINI_API_KEY=\S+/m.test(envExample));
-  assert.ok(!/^OPENROUTER_API_KEY=\S+/m.test(envExample));
-  assert.ok(!/^DATABASE_URL=\S+/m.test(envExample));
-  assert.ok(!/^SESSION_SECRET=\S+/m.test(envExample));
-  assert.ok(!/^KEY_ENCRYPTION_SECRET=\S+/m.test(envExample));
-  assert.ok(!/^ADMIN_PASSWORD_HASH=\S+/m.test(envExample));
+  assert.ok(!/^GUEST_SESSION_SECRET=\S+/m.test(envExample));
+  assert.ok(!/^GUEST_API_KEY=\S+/m.test(envExample));
+  assert.ok(!/^DATABASE_URL=/m.test(envExample));
+  assert.ok(!/^OPENROUTER_/m.test(envExample));
+  assert.ok(!/^SUPABASE_/m.test(envExample));
+  assert.ok(!/^VERCEL_/m.test(envExample));
+  assert.ok(!/^ADMIN_/m.test(envExample));
 });
 
-test('the vulnerable single-file entrypoint no longer exists', async () => {
+test('the vulnerable single-file entrypoint and deployment files are gone', async () => {
   await assert.rejects(() => access(new URL('../index.html', import.meta.url)));
+  await assert.rejects(() => access(new URL('../index.js', import.meta.url)));
+  await assert.rejects(() => access(new URL('../vercel.json', import.meta.url)));
+  await assert.rejects(() => access(new URL('../.vercelignore', import.meta.url)));
 });
 
 test('the hero animation has a compressed source and a poster fallback', async () => {

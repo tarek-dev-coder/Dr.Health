@@ -9,17 +9,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: APP_ORIGIN
-        sync: false
-      - key: OPENROUTER_CALLBACK_URL
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_SSL
-        value: "true"
-      - key: SESSION_SECRET
-        generateValue: true
-      - key: KEY_ENCRYPTION_SECRET
+      - key: GUEST_SESSION_SECRET
         generateValue: true
       - key: ALLOWED_HOSTS
         sync: false
@@ -27,8 +17,10 @@ services:
         value: "1"
       - key: ENFORCE_HTTPS
         value: "true"
-      - key: GUEST_MODE_ENABLED
-        value: "true"
+      - key: GUEST_API_URL
+        value: https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions
+      - key: GUEST_MODEL
+        value: Meta-Llama-3_3-70B-Instruct
       - key: GUEST_DAILY_LIMIT
         value: "5"
       - key: GUEST_IP_DAILY_LIMIT

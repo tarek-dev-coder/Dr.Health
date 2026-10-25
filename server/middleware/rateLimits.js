@@ -1,9 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { config } from '../config.js';
-import { metrics } from '../lib/metrics.js';
 
 function rateLimitHandler(req, res) {
-  metrics.rateLimited += 1;
   res.status(429).json({
     error: {
       code: 'RATE_LIMITED',
@@ -23,25 +21,6 @@ export const globalLimiter = rateLimit({
   ...shared,
   windowMs: config.globalRateWindowMs,
   limit: config.globalRateLimit,
-});
-
-export const chatLimiter = rateLimit({
-  ...shared,
-  windowMs: config.chatRateWindowMs,
-  limit: config.chatRateLimit,
-});
-
-export const loginLimiter = rateLimit({
-  ...shared,
-  windowMs: config.loginRateWindowMs,
-  limit: config.loginRateLimit,
-  skipSuccessfulRequests: true,
-});
-
-export const authLimiter = rateLimit({
-  ...shared,
-  windowMs: config.authRateWindowMs,
-  limit: config.authRateLimit,
 });
 
 export const guestLimiter = rateLimit({

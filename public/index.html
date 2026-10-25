@@ -61,45 +61,23 @@
                     <h2>Ask a question</h2>
                     <p class="chat-note">General information only · Not medical advice</p>
                 </div>
-                <div id="account" class="account" hidden>
-                    <span class="account-status">Signed in</span>
-                    <button type="button" id="signOutButton" class="text-button">Sign out</button>
-                </div>
-                <div id="guestAccount" class="account" hidden>
-                    <span class="account-status">Guest</span>
-                    <span id="guestRemaining" class="guest-remaining"></span>
-                    <a class="text-button" href="/auth/openrouter">Sign in</a>
+                <div class="usage">
+                    <span class="usage-status">Free chat</span>
+                    <span id="guestRemaining" class="usage-remaining" aria-live="polite"></span>
                 </div>
             </header>
 
-            <div id="authGate" class="auth-gate" hidden>
-                <p class="section-label">Private by design</p>
-                <h3>Sign in to ask</h3>
-                <p>
-                    Continue with Google to create a private AI key for your account.
-                    It stays on this server, and only your questions use it.
-                </p>
-                <a id="authButton" class="auth-button" href="/auth/openrouter">Continue with Google</a>
-                <button type="button" id="guestButton" class="auth-button auth-button-secondary">
-                    Continue as guest
-                </button>
-                <p id="guestGateNote" class="auth-note">
-                    Guest mode is text-only and limited to 5 questions a day.
-                    Sign in for image support and more questions.
-                </p>
-                <p id="authError" class="auth-error" role="alert"></p>
-            </div>
+            <p id="sessionStatus" class="session-status" role="alert" hidden></p>
 
             <div id="messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Conversation" hidden>
                 <div id="emptyState" class="empty-state" aria-hidden="true">
-                    <p>Start with a health question, or attach a food photo.</p>
+                    <p>Start with a health question.</p>
                     <p class="empty-example">For example: “What should I eat before a run?”</p>
                 </div>
             </div>
 
             <div class="composer" id="composer" hidden>
-                <p id="attachment" class="attachment" role="status" hidden></p>
-                <p id="loader" class="sr-only" role="status" hidden>Analyzing… this can take up to a minute.</p>
+                <p id="loader" class="sr-only" role="status" hidden>Thinking… this can take up to a minute.</p>
                 <p id="error" class="error" role="alert"></p>
 
                 <form id="chat-form" novalidate>
@@ -109,35 +87,19 @@
                         id="textInput"
                         name="message"
                         placeholder="Ask about your health..."
-                        maxlength="4000"
+                        maxlength="2000"
                         autocomplete="off"
                         enterkeyhint="send"
                         aria-describedby="composer-hint"
                     >
-                    <input
-                        type="file"
-                        id="imageInput"
-                        name="image"
-                        class="sr-only"
-                        accept="image/jpeg,image/png,image/webp"
-                        tabindex="-1"
-                        aria-hidden="true"
-                    >
-                    <button type="button" id="uploadButton" aria-label="Attach an image" title="Attach an image">
-                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                            <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                        </svg>
-                    </button>
                     <button type="submit" id="sendButton" aria-label="Send message" title="Send message">
                         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                             <path d="M5 12h14M13 6l6 6-6 6"/>
                         </svg>
                     </button>
                 </form>
-                <p id="composer-hint" class="composer-hint">Enter to send · JPEG, PNG, or WebP up to 5 MB</p>
-                <p id="guestModeNote" class="composer-hint guest-mode-note" aria-live="polite" hidden>
-                    Guest mode · text only · sign in for images
-                </p>
+                <p id="composer-hint" class="composer-hint">Enter to send · Text only</p>
+                <p id="guestModeNote" class="composer-hint guest-mode-note" aria-live="polite" hidden></p>
             </div>
         </section>
     </main>
