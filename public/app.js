@@ -8,6 +8,10 @@ const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILE_CHARS = 24000;
 const REQUEST_TIMEOUT_MS = 90000;
 const THEME_KEY = 'dh-theme';
+const HISTORY_KEY = 'dh-history-v1';
+const MAX_SAVED_CHATS = 20;
+const MAX_SAVED_MESSAGES = 60;
+const MAX_SAVED_CHARS = 2000000;
 
 const chat = document.getElementById('chat');
 const messages = document.getElementById('messages');
@@ -27,11 +31,22 @@ const promptChips = document.getElementById('promptChips');
 const footerText = document.getElementById('footer-text');
 const themeToggle = document.getElementById('themeToggle');
 const newChatButton = document.getElementById('newChatButton');
+const historyButton = document.getElementById('historyButton');
+const historyPanel = document.getElementById('historyPanel');
+const historyList = document.getElementById('historyList');
+const historyEmpty = document.getElementById('historyEmpty');
+const historyCount = document.getElementById('historyCount');
+const clearHistoryButton = document.getElementById('clearHistoryButton');
 
 let chatHistory = [];
 let selectedFile = null;
 let busy = false;
 let typingIndicator = null;
+let savedChats = [];
+let currentChat = null;
+let clearArmed = false;
+let clearTimer = null;
+let storageWarningShown = false;
 
 function setError(message) {
     errorDiv.textContent = message || '';
@@ -246,6 +261,8 @@ function setBusy(value) {
     removeFileButton.disabled = value;
     textInput.disabled = value;
     newChatButton.disabled = value;
+    historyButton.disabled = value;
+    clearHistoryButton.disabled = value || savedChats.length === 0;
     chat.setAttribute('aria-busy', String(value));
     messages.setAttribute('aria-busy', String(value));
 }
@@ -287,13 +304,302 @@ function buildHistoryText(text, file, fileText) {
     return `${text || 'Look at the attached file.'}\n\nAttached file: ${file.name}\n\n${fence}\n${fileText}\n${fence}`;
 }
 
-function resetChat() {
+function createChat() {
+    const id =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const now = Date.now();
+    return { id, title: '', createdAt: now, updatedAt: now, messages: [] };
+}
+
+function makeChatTitle(text, fileName) {
+    const fallback = fileName ? `File: ${fileName}` : 'Health chat';
+    const clean = String(text || fallback).replace(/\s+/g, ' ').trim() || fallback;
+    return clean.length > 54 ? `${clean.slice(0, 51)}…` : clean;
+}
+
+function formatChatDate(timestamp) {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) return 'Today';
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function normalizeChat(value) {
+    if (!value || typeof value !== 'object') return null;
+    if (typeof value.id !== 'string' || value.id.length === 0 || value.id.length > 80) {
+        return null;
+    }
+
+    const messages = Array.isArray(value.messages)
+        ? value.messages
+              .filter(
+                  (message) =>
+                      message &&
+                      (message.role === 'user' || message.role === 'assistant') &&
+                      typeof message.text === 'string' &&
+                      message.text.trim(),
+              )
+              .slice(-MAX_SAVED_MESSAGES)
+              .map((message) => ({
+                  role: message.role,
+                  text: message.text.slice(0, 12000),
+              }))
+        : [];
+
+    if (messages.length === 0) return null;
+
+    const createdAt = Number.isFinite(value.createdAt) ? value.createdAt : Date.now();
+    const updatedAt = Number.isFinite(value.updatedAt) ? value.updatedAt : createdAt;
+    const firstUser = messages.find((message) => message.role === 'user');
+    const title =
+        typeof value.title === 'string' && value.title.trim()
+            ? value.title.trim().slice(0, 80)
+            : makeChatTitle(firstUser ? firstUser.text : '', '');
+
+    return { id: value.id, title, createdAt, updatedAt, messages };
+}
+
+function loadSavedChats() {
+    try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        if (!raw) return [];
+
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.chats)) return [];
+
+        return data.chats.map(normalizeChat).filter(Boolean).slice(0, MAX_SAVED_CHATS);
+    } catch {
+        return [];
+    }
+}
+
+function trimSavedChats() {
+    savedChats.sort((a, b) => b.updatedAt - a.updatedAt);
+    savedChats = savedChats.slice(0, MAX_SAVED_CHATS);
+
+    for (const chat of savedChats) {
+        if (chat.messages.length > MAX_SAVED_MESSAGES) {
+            chat.messages = chat.messages.slice(-MAX_SAVED_MESSAGES);
+        }
+    }
+
+    let totalChars = savedChats.reduce(
+        (total, chat) =>
+            total + chat.messages.reduce((sum, message) => sum + message.text.length, 0),
+        0,
+    );
+
+    while (totalChars > MAX_SAVED_CHARS && savedChats.length > 1) {
+        const removed = savedChats.pop();
+        totalChars -= removed.messages.reduce(
+            (sum, message) => sum + message.text.length,
+            0,
+        );
+    }
+}
+
+function persistChats() {
+    try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify({ version: 1, chats: savedChats }));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function renderHistoryList() {
+    if (
+        !historyButton ||
+        !historyList ||
+        !historyEmpty ||
+        !historyCount ||
+        !clearHistoryButton
+    ) {
+        return;
+    }
+
+    const chats = savedChats.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+    historyList.replaceChildren();
+
+    for (const chat of chats) {
+        const item = document.createElement('li');
+        item.className = 'history-item';
+        if (currentChat && chat.id === currentChat.id) item.classList.add('active');
+
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'history-open';
+        open.dataset.chatId = chat.id;
+        open.setAttribute('aria-label', `Open chat: ${chat.title}`);
+
+        const title = document.createElement('span');
+        title.className = 'history-item-title';
+        title.textContent = chat.title;
+
+        const meta = document.createElement('span');
+        meta.className = 'history-item-meta';
+        meta.textContent = formatChatDate(chat.updatedAt);
+
+        open.append(title, meta);
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'history-delete';
+        remove.dataset.deleteId = chat.id;
+        remove.setAttribute('aria-label', `Delete chat: ${chat.title}`);
+        remove.textContent = '×';
+
+        item.append(open, remove);
+        historyList.appendChild(item);
+    }
+
+    historyList.hidden = chats.length === 0;
+    historyEmpty.hidden = chats.length > 0;
+    historyCount.textContent = String(chats.length);
+    historyCount.hidden = chats.length === 0;
+    clearHistoryButton.disabled = busy || chats.length === 0;
+    let historyLabel = 'History';
+    if (chats.length === 1) historyLabel = 'History, 1 saved chat';
+    else if (chats.length > 1) historyLabel = `History, ${chats.length} saved chats`;
+    historyButton.setAttribute('aria-label', historyLabel);
+}
+
+function saveCurrentChat() {
+    if (!currentChat || currentChat.messages.length === 0) return;
+
+    currentChat.updatedAt = Date.now();
+    if (!currentChat.title) {
+        const firstUser = currentChat.messages.find((message) => message.role === 'user');
+        currentChat.title = makeChatTitle(firstUser ? firstUser.text : '', '');
+    }
+
+    const index = savedChats.findIndex((chat) => chat.id === currentChat.id);
+    if (index === -1) {
+        savedChats.unshift(currentChat);
+    } else {
+        savedChats[index] = currentChat;
+    }
+
+    trimSavedChats();
+    if (!persistChats() && !storageWarningShown) {
+        storageWarningShown = true;
+        setError('This chat could not be saved in your browser.');
+    }
+    renderHistoryList();
+}
+
+function resetClearHistory() {
+    if (clearTimer) {
+        clearTimeout(clearTimer);
+        clearTimer = null;
+    }
+    clearArmed = false;
+    if (clearHistoryButton) {
+        clearHistoryButton.textContent = 'Clear all';
+        clearHistoryButton.classList.remove('armed');
+    }
+}
+
+function closeHistoryPanel() {
+    if (!historyPanel || !historyButton) return;
+    if (historyPanel.hidden) return;
+
+    historyPanel.hidden = true;
+    historyButton.setAttribute('aria-expanded', 'false');
+    resetClearHistory();
+}
+
+function openHistoryPanel() {
+    if (!historyPanel || !historyButton) return;
+
+    renderHistoryList();
+    historyPanel.hidden = false;
+    historyButton.setAttribute('aria-expanded', 'true');
+    historyPanel.focus();
+}
+
+function toggleHistoryPanel() {
+    if (busy || !historyPanel) return;
+    if (historyPanel.hidden) openHistoryPanel();
+    else closeHistoryPanel();
+}
+
+function openChat(chatId) {
     if (busy) return;
+
+    const chat = savedChats.find((item) => item.id === chatId);
+    if (!chat) return;
+
+    currentChat = chat;
+    chatHistory = trimHistory(
+        chat.messages.map((message) => ({
+            role: message.role === 'assistant' ? 'model' : 'user',
+            text: message.text,
+        })),
+    );
+    setError('');
+    clearFile();
+    textInput.value = '';
+    messages.replaceChildren();
+    for (const message of chat.messages) addMessage(message.role, message.text);
+    scrollMessagesToBottom();
+    closeHistoryPanel();
+    textInput.focus();
+}
+
+function deleteChat(chatId) {
+    if (busy) return;
+
+    const wasActive = currentChat && currentChat.id === chatId;
+    savedChats = savedChats.filter((chat) => chat.id !== chatId);
+    persistChats();
+    if (wasActive) startNewChat();
+    renderHistoryList();
+}
+
+function clearAllChats() {
+    if (busy) return;
+
+    savedChats = [];
+    persistChats();
+    startNewChat();
+    renderHistoryList();
+}
+
+function armClearHistory() {
+    if (busy || !clearHistoryButton || savedChats.length === 0) return;
+
+    if (!clearArmed) {
+        clearArmed = true;
+        clearHistoryButton.textContent = 'Press again to clear';
+        clearHistoryButton.classList.add('armed');
+        clearTimer = setTimeout(resetClearHistory, 4000);
+        return;
+    }
+
+    resetClearHistory();
+    clearAllChats();
+}
+
+function startNewChat() {
+    if (busy) return;
+
+    currentChat = createChat();
     chatHistory = [];
     setError('');
     clearFile();
     textInput.value = '';
     messages.replaceChildren(emptyState);
+    closeHistoryPanel();
     textInput.focus();
 }
 
@@ -338,7 +644,7 @@ async function sendMessage() {
     const text = textInput.value.trim();
 
     if (!text && !selectedFile) {
-        setError('Type a question or add a text or code file.');
+        setError('Type a question or add a text file.');
         textInput.focus();
         return;
     }
@@ -372,6 +678,14 @@ async function sendMessage() {
         selectedFile && fileText ? buildHistoryText(text, selectedFile, fileText) : userLabel;
 
     addMessage('user', userLabel);
+
+    if (!currentChat) currentChat = createChat();
+    if (currentChat.messages.length === 0) {
+        currentChat.title = makeChatTitle(text, attachedName);
+    }
+    currentChat.messages.push({ role: 'user', text: userLabel });
+    saveCurrentChat();
+    closeHistoryPanel();
 
     const formData = new FormData();
     if (text) formData.append('message', text);
@@ -431,6 +745,8 @@ async function sendMessage() {
                 { role: 'model', text: reply },
             ]),
         );
+        currentChat.messages.push({ role: 'assistant', text: reply });
+        saveCurrentChat();
         clearFile();
     } catch (error) {
         setError(error && error.message ? error.message : 'Something went wrong. Please try again.');
@@ -493,7 +809,44 @@ removeFileButton.addEventListener('click', () => {
     setError('');
 });
 
-newChatButton.addEventListener('click', resetChat);
+newChatButton.addEventListener('click', startNewChat);
+
+historyButton?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleHistoryPanel();
+});
+
+historyPanel?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+
+    const open = target.closest('[data-chat-id]');
+    if (open) {
+        openChat(open.dataset.chatId);
+        return;
+    }
+
+    const remove = target.closest('[data-delete-id]');
+    if (remove) deleteChat(remove.dataset.deleteId);
+});
+
+clearHistoryButton?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    armClearHistory();
+});
+
+document.addEventListener('click', (event) => {
+    if (!historyPanel || historyPanel.hidden) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target && !target.closest('.chat-actions')) closeHistoryPanel();
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !historyPanel || historyPanel.hidden) return;
+    closeHistoryPanel();
+    historyButton?.focus();
+});
 
 promptChips?.addEventListener('click', (event) => {
     const chip = event.target.closest('[data-prompt]');
@@ -506,6 +859,9 @@ window.addEventListener('resize', () => {
     if (isNearBottom()) scrollMessagesToBottom();
 });
 
+currentChat = createChat();
+savedChats = loadSavedChats();
+renderHistoryList();
 initTheme();
 loadSuggestions();
-footerText.textContent = `© ${new Date().getFullYear()} Dr.Health. All rights reserved.`;
+footerText.textContent = `© ${new Date().getFullYear()} Dr.Health`;

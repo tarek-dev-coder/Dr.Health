@@ -22,7 +22,7 @@ test('frontend contains no API keys or direct provider calls', () => {
   assert.ok(!/Bearer\s+[A-Za-z0-9._-]{8,}/.test(combined));
 });
 
-test('frontend stores only the theme preference and avoids HTML sinks', () => {
+test('frontend stores only the theme and local chat history, and avoids HTML sinks', () => {
   assert.ok(!/sessionStorage|indexedDB/i.test(appJs));
   assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/i.test(appJs));
   assert.ok(!/\beval\s*\(|new\s+Function\s*\(/i.test(appJs));
@@ -31,8 +31,12 @@ test('frontend stores only the theme preference and avoids HTML sinks', () => {
   const storageCalls = appJs.match(/localStorage\.(?:getItem|setItem)\(([^)]*)\)/g) || [];
   assert.ok(storageCalls.length > 0);
   for (const call of storageCalls) {
-    assert.match(call, /THEME_KEY/);
+    assert.match(call, /THEME_KEY|HISTORY_KEY/);
   }
+
+  assert.match(appJs, /const HISTORY_KEY = 'dh-history-v1';/);
+  assert.match(appJs, /localStorage\.setItem\(HISTORY_KEY/);
+  assert.match(appJs, /localStorage\.getItem\(HISTORY_KEY/);
 });
 
 test('the UI has no sign-in surface and supports text/code attachments', () => {
@@ -55,7 +59,12 @@ test('the UI has no sign-in surface and supports text/code attachments', () => {
   assert.match(html, /accept="[^"]*\.js/);
   assert.match(html, /accept="[^"]*\.md/);
   assert.ok(!/accept="[^"]*image\//.test(html));
-  assert.match(html, /Chats and files are not saved\./);
+  assert.match(html, /id="historyButton"/);
+  assert.match(html, /id="historyPanel"/);
+  assert.match(html, /id="historyList"/);
+  assert.match(html, /id="clearHistoryButton"/);
+  assert.match(html, /No saved chats yet\./);
+  assert.match(html, /Chats stay private in this browser\. Files are not saved\./);
   assert.ok(!html.includes('Emergency? Call your local emergency number first.'));
   assert.ok(!html.includes('Messages are processed by an AI provider'));
   assert.ok(!html.includes('provider may use'));
@@ -85,8 +94,33 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('Health made clear'));
   assert.ok(!html.includes('Health, made clear'));
   assert.ok(!html.includes('Your health, explained simply'));
+  assert.match(html, /Let's talk about your health\./);
+  assert.match(html, /Ask anything\. I'm here\./);
+  assert.match(html, /Health advice is everywhere\. Get one clear answer\./);
+  assert.match(html, /Free to use\. Just ask\./);
+  assert.match(html, /Friendly and easy for everyone\./);
+  assert.match(html, /It remembers your health story\./);
+  assert.match(html, /Short answers, explained as you go\./);
+  assert.match(html, /Attach a text file: health notes, a symptom diary, or code\./);
+  assert.match(html, /Chats stay private in this browser\. Files are not saved\./);
   assert.match(html, /What do you want to ask\?/);
-  assert.match(html, /Chats and files are not saved\./);
+  assert.ok(!html.includes('Plain words, not medical terms.'));
+  assert.ok(!html.includes('Follow-ups remember what you said.'));
+  assert.ok(!html.includes('Tells you when it is not sure.'));
+  assert.ok(!html.includes('Free chat · no account'));
+  assert.ok(!html.includes('Direct answers · No judgment'));
+  assert.ok(!html.includes('medical log'));
+  assert.ok(!html.includes('personal doctor'));
+  assert.ok(!html.includes('Let me check your health'));
+  assert.ok(!html.includes('All rights reserved'));
+});
+
+test('saved history stays local and does not persist attached file text', () => {
+  assert.match(appJs, /currentChat\.messages\.push\(\{ role: 'user', text: userLabel \}\)/);
+  assert.match(appJs, /currentChat\.messages\.push\(\{ role: 'assistant', text: reply \}\)/);
+  assert.ok(!appJs.includes("currentChat.messages.push({ role: 'user', text: historyUserText })"));
+  assert.match(html, /Saved in this browser\. Clear them anytime\./);
+  assert.match(html, /id="historyPanel"/);
 });
 
 test('HTML uses external scripts/styles and no inline handlers', () => {
