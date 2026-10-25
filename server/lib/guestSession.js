@@ -11,8 +11,8 @@ function sign(encodedPayload, secret) {
 }
 
 export function createGuestSessionToken(ttlSeconds = config.guestSessionTtlSeconds) {
-  if (!config.sessionSecret) {
-    throw new Error('SESSION_SECRET is not configured');
+  if (!config.guestSessionSecret) {
+    throw new Error('GUEST_SESSION_SECRET is not configured');
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -25,11 +25,11 @@ export function createGuestSessionToken(ttlSeconds = config.guestSessionTtlSecon
   };
 
   const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
-  return `${encodedPayload}.${sign(encodedPayload, config.sessionSecret)}`;
+  return `${encodedPayload}.${sign(encodedPayload, config.guestSessionSecret)}`;
 }
 
 export function verifyGuestSessionToken(token) {
-  if (!config.sessionSecret || typeof token !== 'string') return null;
+  if (!config.guestSessionSecret || typeof token !== 'string') return null;
   if (token.length > 4096) return null;
 
   const parts = token.split('.');
@@ -38,7 +38,7 @@ export function verifyGuestSessionToken(token) {
   if (!/^[A-Za-z0-9_-]{1,4000}$/.test(encodedPayload)) return null;
   if (!/^[A-Za-z0-9_-]{43}$/.test(signature)) return null;
 
-  const expected = Buffer.from(sign(encodedPayload, config.sessionSecret), 'utf8');
+  const expected = Buffer.from(sign(encodedPayload, config.guestSessionSecret), 'utf8');
   const received = Buffer.from(signature, 'utf8');
   if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null;
 

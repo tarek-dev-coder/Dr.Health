@@ -4,7 +4,7 @@ import { logger, serializeError } from '../lib/logger.js';
 
 const GUEST_SYSTEM_PROMPT = `You are Dr.Health, a medical information assistant.
 
-Answer accurately and concisely, aiming for under 250 words, using evidence-based clinical knowledge. Never diagnose, prescribe medication, or give exact dosages. If the user describes a possible emergency, tell them to contact local emergency services immediately. Do not ask for or repeat identifying information. Guest mode is text-only: if the user asks you to interpret an image, explain that they need to sign in for image support. This is for informational purposes only and is not a substitute for professional medical advice. Never disclose the underlying model name, provider, vendor, or technical architecture.`;
+Answer accurately and concisely, aiming for under 250 words, using evidence-based clinical knowledge. Never diagnose, prescribe medication, or give exact dosages. If the user describes a possible emergency, tell them to contact local emergency services immediately. Do not ask for or repeat identifying information. This assistant is text-only: if the user asks you to interpret an image, explain that you cannot view images. This is for informational purposes only and is not a substitute for professional medical advice. Never disclose the underlying model name, provider, vendor, or technical architecture.`;
 
 const CIRCUIT_OPEN_MS = 60000;
 
@@ -50,7 +50,7 @@ function buildMessages(history, message) {
 }
 
 /**
- * Text-only guest provider. The default endpoint is keyless; if GUEST_API_KEY
+ * Text-only provider call. The default endpoint is keyless; if GUEST_API_KEY
  * is configured (for example when using LLM7), it is sent only from the server.
  */
 export async function generateGuestReply({ history, message, requestId }) {
@@ -58,7 +58,7 @@ export async function generateGuestReply({ history, message, requestId }) {
     throw new AppError(
       503,
       'GUEST_BUSY',
-      'Guest mode is busy right now. Please sign in or try again shortly.',
+      'The assistant is busy right now. Please try again shortly.',
       { retryAfterSeconds: 30 },
     );
   }
@@ -67,7 +67,7 @@ export async function generateGuestReply({ history, message, requestId }) {
     throw new AppError(
       429,
       'GUEST_BUSY',
-      'Guest mode is busy right now. Please try again in a moment.',
+      'The assistant is busy right now. Please try again in a moment.',
       { retryAfterSeconds: 10 },
     );
   }
@@ -112,7 +112,7 @@ export async function generateGuestReply({ history, message, requestId }) {
         throw new AppError(
           504,
           'GUEST_TIMEOUT',
-          'Guest mode took too long to respond. Please sign in or try again.',
+          'The assistant took too long to respond. Please try again.',
         );
       }
 
@@ -125,7 +125,7 @@ export async function generateGuestReply({ history, message, requestId }) {
       throw new AppError(
         503,
         'GUEST_UNAVAILABLE',
-        'Guest mode is unavailable right now. Please sign in or try again later.',
+        'The assistant is unavailable right now. Please try again later.',
       );
     }
 
@@ -138,7 +138,7 @@ export async function generateGuestReply({ history, message, requestId }) {
         throw new AppError(
           429,
           'GUEST_BUSY',
-          'Guest mode is busy right now. Please try again shortly.',
+          'The assistant is busy right now. Please try again shortly.',
           { retryAfterSeconds },
         );
       }
@@ -155,7 +155,7 @@ export async function generateGuestReply({ history, message, requestId }) {
       throw new AppError(
         503,
         'GUEST_UNAVAILABLE',
-        'Guest mode is unavailable right now. Please sign in or try again later.',
+        'The assistant is unavailable right now. Please try again later.',
       );
     }
 
@@ -165,7 +165,7 @@ export async function generateGuestReply({ history, message, requestId }) {
     } catch {
       circuitOpenUntil = Date.now() + CIRCUIT_OPEN_MS;
       logger.warn('guest_bad_response', { requestId, durationMs: Date.now() - startedAt });
-      throw new AppError(503, 'GUEST_UNAVAILABLE', 'Guest mode returned an unreadable response.');
+      throw new AppError(503, 'GUEST_UNAVAILABLE', 'The assistant returned an unreadable response.');
     }
 
     const text = extractText(data);
@@ -175,7 +175,7 @@ export async function generateGuestReply({ history, message, requestId }) {
         durationMs: Date.now() - startedAt,
         finishReason: data?.choices?.[0]?.finish_reason,
       });
-      throw new AppError(503, 'GUEST_EMPTY_RESPONSE', 'Guest mode did not return a usable response.');
+      throw new AppError(503, 'GUEST_EMPTY_RESPONSE', 'The assistant did not return a usable response.');
     }
 
     const usage = data?.usage ?? {};
@@ -191,6 +191,11 @@ export async function generateGuestReply({ history, message, requestId }) {
   } finally {
     activeRequests = Math.max(0, activeRequests - 1);
   }
+}
+
+export function resetGuestCircuitForTests() {
+  circuitOpenUntil = 0;
+  activeRequests = 0;
 }
 
 export { GUEST_SYSTEM_PROMPT };

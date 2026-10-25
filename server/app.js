@@ -11,9 +11,6 @@ import { requestContext } from './middleware/requestContext.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
-import { chatRouter } from './routes/chat.js';
-import { adminRouter } from './routes/admin.js';
-import { authRouter, accountRouter } from './routes/auth.js';
 import { guestRouter } from './routes/guest.js';
 
 export function createApp() {
@@ -46,19 +43,11 @@ export function createApp() {
     }),
   );
   app.use('/api', globalLimiter);
-  // JSON is scoped to the endpoints that need it, so a future webhook route can
-  // read the raw body for signature verification.
-  app.use('/api/chat', express.json({ limit: '64kb', strict: true, type: 'application/json' }));
-  app.use('/api/admin', express.json({ limit: '16kb', strict: true, type: 'application/json' }));
   app.use('/api/guest', express.json({ limit: '16kb', strict: true, type: 'application/json' }));
   app.use(cookieParser());
 
-  app.use('/auth', authRouter);
-  app.use('/api/auth', accountRouter);
   app.use('/api/guest', guestRouter);
   app.use('/api/health', healthRouter);
-  app.use('/api/chat', chatRouter);
-  app.use('/api/admin', adminRouter);
 
   app.use('/api', (req, res, next) => next(notFound('API endpoint not found.')));
 

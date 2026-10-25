@@ -1,14 +1,6 @@
 import { createApp } from './app.js';
-import { config, isUserAuthConfigured } from './config.js';
+import { config } from './config.js';
 import { logger, serializeError } from './lib/logger.js';
-import { closeStore, initStore, storeMode } from './lib/store.js';
-
-try {
-  await initStore();
-} catch (error) {
-  logger.error('store_init_failed', { error: serializeError(error) });
-  process.exit(1);
-}
 
 const app = createApp();
 
@@ -16,31 +8,15 @@ const server = app.listen(config.port, () => {
   logger.info('server_started', {
     port: config.port,
     environment: config.nodeEnv,
-    authConfigured: isUserAuthConfigured,
-    store: storeMode(),
-    adminConfigured: Boolean(config.adminPasswordHash && config.sessionSecret),
     httpsEnforced: config.enforceHttps,
     allowedOrigins: config.allowedOrigins.length,
     allowedHosts: config.allowedHosts.length,
   });
-
-  if (!isUserAuthConfigured) {
-    logger.warn('user_auth_not_configured', {
-      detail: 'SESSION_SECRET is not set; /api/chat will return 503 until sign-in is configured.',
-    });
-  }
-
-  if (storeMode() === 'memory') {
-    logger.warn('memory_store_in_use', {
-      detail:
-        'DATABASE_URL is not set. Encrypted user keys are kept in memory and will be lost on restart. Use Postgres in production.',
-    });
-  }
 });
 
 // Basic slowloris / resource-exhaustion limits.
 server.headersTimeout = 20000;
-server.requestTimeout = Math.max(45000, config.openrouterTimeoutMs + 15000);
+server.requestTimeout = Math.max(45000, config.guestTimeoutMs + 15000);
 server.keepAliveTimeout = 5000;
 server.maxHeadersCount = 100;
 
@@ -61,11 +37,8 @@ function shutdown(signal) {
   }, 10000);
   forceExit.unref();
 
-  server.close(async (error) => {
+  server.close((error) => {
     clearTimeout(forceExit);
-    await closeStore().catch((storeError) => {
-      logger.error('store_close_failed', { error: serializeError(storeError) });
-    });
     if (error) {
       logger.error('server_close_failed', { error: serializeError(error) });
       process.exit(1);

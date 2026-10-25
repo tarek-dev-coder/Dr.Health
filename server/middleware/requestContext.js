@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { logger } from '../lib/logger.js';
-import { metrics } from '../lib/metrics.js';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/;
 
@@ -22,10 +21,6 @@ export function requestContext(req, res, next) {
       ip: req.ip,
     });
   });
-
-  if (req.path.startsWith('/api/')) {
-    metrics.totalRequests += 1;
-  }
 
   next();
 }

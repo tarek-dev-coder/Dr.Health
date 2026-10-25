@@ -1,221 +1,70 @@
 'use strict';
 
 const API_BASE = '/api';
-const MAX_MESSAGE_CHARS = 4000;
-const MAX_GUEST_MESSAGE_CHARS = 2000;
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
-const MAX_HISTORY_TURNS = 20;
-const MAX_HISTORY_CHARS = 20000;
-const MAX_GUEST_HISTORY_TURNS = 4;
-const MAX_GUEST_HISTORY_CHARS = 4000;
-const DEFAULT_GUEST_LIMIT = 5;
+const MAX_MESSAGE_CHARS = 2000;
+const MAX_HISTORY_TURNS = 4;
+const MAX_HISTORY_CHARS = 4000;
 const REQUEST_TIMEOUT_MS = 75000;
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const IMAGE_COMPRESSION_THRESHOLD = 1.5 * 1024 * 1024;
-const MAX_IMAGE_DIMENSION = 1600;
-const IMAGE_QUALITY = 0.82;
 const IS_FILE_PROTOCOL = window.location.protocol === 'file:';
 
 const chat = document.getElementById('chat');
 const messages = document.getElementById('messages');
 const chatForm = document.getElementById('chat-form');
 const textInput = document.getElementById('textInput');
-const imageInput = document.getElementById('imageInput');
-const uploadButton = document.getElementById('uploadButton');
 const sendButton = document.getElementById('sendButton');
 const loader = document.getElementById('loader');
 const errorDiv = document.getElementById('error');
-const attachment = document.getElementById('attachment');
 const emptyState = document.getElementById('emptyState');
 const footerText = document.getElementById('footer-text');
 const heroPlay = document.getElementById('heroPlay');
 const heroAnimation = document.getElementById('heroAnimation');
-const authGate = document.getElementById('authGate');
-const authError = document.getElementById('authError');
-const authButton = document.getElementById('authButton');
-const guestButton = document.getElementById('guestButton');
-const guestGateNote = document.getElementById('guestGateNote');
-const account = document.getElementById('account');
-const guestAccount = document.getElementById('guestAccount');
 const guestRemaining = document.getElementById('guestRemaining');
-const signOutButton = document.getElementById('signOutButton');
-const composer = document.getElementById('composer');
-const composerHint = document.getElementById('composer-hint');
 const guestModeNote = document.getElementById('guestModeNote');
+const sessionStatus = document.getElementById('sessionStatus');
+const composer = document.getElementById('composer');
 
 let chatHistory = [];
-let uploadedImage = null;
 let busy = false;
 let typingIndicator = null;
-let mode = null;
-let guestAvailable = true;
-let guestLimit = DEFAULT_GUEST_LIMIT;
+let started = false;
 let guestExhausted = false;
 
 function setError(message) {
     errorDiv.textContent = message || '';
 }
 
-function setGuestLimit(limit) {
-    const parsed = Number(limit);
-    if (Number.isInteger(parsed) && parsed > 0 && parsed <= 1000) {
-        guestLimit = parsed;
-    }
-
-    if (guestGateNote) {
-        guestGateNote.textContent = guestAvailable
-            ? `Guest mode is text-only and limited to ${guestLimit} questions a day. Sign in for image support and more questions.`
-            : 'Guest mode is unavailable right now. Sign in to continue.';
-    }
+function showSessionError(message) {
+    started = false;
+    sessionStatus.textContent = message;
+    sessionStatus.hidden = false;
+    messages.hidden = true;
+    composer.hidden = true;
+    chat.setAttribute('aria-busy', 'false');
 }
 
 function setGuestRemaining(remaining) {
     const safeRemaining = Number.isInteger(remaining) ? Math.max(0, remaining) : 0;
     guestExhausted = safeRemaining <= 0;
-    guestRemaining.textContent = `${safeRemaining} left`;
+    guestRemaining.textContent = `${safeRemaining} left today`;
+    guestModeNote.hidden = false;
     guestModeNote.textContent = safeRemaining > 0
-        ? `Guest mode · text only · ${safeRemaining} question${safeRemaining === 1 ? '' : 's'} left`
-        : 'Guest limit reached · sign in to continue';
+        ? `Free text-only chat · ${safeRemaining} question${safeRemaining === 1 ? '' : 's'} left today`
+        : 'Daily limit reached · come back tomorrow';
 
-    if (mode === 'guest') {
+    if (started) {
         sendButton.disabled = busy || guestExhausted;
     }
 }
 
-function showAuthGate(message = '') {
-    mode = null;
-    authGate.hidden = false;
-    messages.hidden = true;
-    composer.hidden = true;
-    account.hidden = true;
-    guestAccount.hidden = true;
-    guestButton.hidden = !guestAvailable;
-    authError.textContent = message;
-    chat.setAttribute('aria-busy', 'false');
-}
-
-function setEmptyStateForGuest(isGuest) {
-    if (!emptyState) return;
-    const title = emptyState.querySelector('p');
-    const example = emptyState.querySelector('.empty-example');
-    if (!title || !example) return;
-
-    title.textContent = isGuest
-        ? 'Start with a health question.'
-        : 'Start with a health question, or attach a food photo.';
-    example.textContent = isGuest
-        ? 'Guest mode is text-only. Sign in to attach a food photo.'
-        : 'For example: “What should I eat before a run?”';
-}
-
 function showChat() {
-    mode = 'user';
-    guestExhausted = false;
-    authGate.hidden = true;
+    started = true;
+    sessionStatus.hidden = true;
     messages.hidden = false;
     composer.hidden = false;
-    account.hidden = false;
-    guestAccount.hidden = true;
-    guestButton.hidden = !guestAvailable;
-    uploadButton.hidden = false;
     textInput.maxLength = MAX_MESSAGE_CHARS;
-    composerHint.hidden = false;
-    guestModeNote.hidden = true;
-    setEmptyStateForGuest(false);
-    authError.textContent = '';
 }
 
-function showGuestChat(remaining, limit = guestLimit) {
-    mode = 'guest';
-    setGuestLimit(limit);
-    authGate.hidden = true;
-    messages.hidden = false;
-    composer.hidden = false;
-    account.hidden = true;
-    guestAccount.hidden = false;
-    guestButton.hidden = !guestAvailable;
-    uploadButton.hidden = true;
-    uploadedImage = null;
-    imageInput.value = '';
-    showAttachment(null);
-    textInput.maxLength = MAX_GUEST_MESSAGE_CHARS;
-    composerHint.hidden = true;
-    guestModeNote.hidden = false;
-    setEmptyStateForGuest(true);
-    setGuestRemaining(remaining);
-    authError.textContent = '';
-}
-
-async function loadGuestSession() {
-    try {
-        const response = await fetch(`${API_BASE}/guest/session`, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-            signal: AbortSignal.timeout(10000),
-        });
-        if (!response.ok) return null;
-        return await response.json();
-    } catch {
-        return null;
-    }
-}
-
-async function loadSession() {
-    const params = new URLSearchParams(window.location.search);
-    let data = null;
-
-    try {
-        const response = await fetch(`${API_BASE}/auth/session`, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-            signal: AbortSignal.timeout(10000),
-        });
-        if (response.ok) {
-            data = await response.json();
-        }
-    } catch {
-        data = null;
-    }
-
-    let guestData = null;
-    if (!(data && data.authenticated === true)) {
-        guestData = await loadGuestSession();
-        guestAvailable = Boolean(guestData && guestData.available === true);
-        if (guestAvailable) {
-            setGuestLimit(guestData.limit);
-        } else if (guestGateNote) {
-            guestGateNote.textContent = 'Guest mode is unavailable right now. Sign in to continue.';
-        }
-    }
-
-    if (data && data.authenticated === true) {
-        showChat();
-        if (params.has('signed_in')) textInput.focus();
-    } else if (guestAvailable && guestData && guestData.guest === true) {
-        showGuestChat(guestData.remaining, guestData.limit);
-        textInput.focus();
-    } else {
-        const message = params.has('auth_error')
-            ? 'Sign-in could not be completed. Please try again.'
-            : data === null
-                ? 'Could not check sign-in status. Please refresh the page.'
-                : '';
-        showAuthGate(message);
-    }
-
-    if (window.location.search) {
-        window.history.replaceState(null, '', window.location.pathname);
-    }
-}
-
-async function startGuest() {
-    if (busy) return;
-
-    guestButton.disabled = true;
-    guestButton.textContent = 'Starting…';
-
+async function startGuestSession() {
     try {
         const response = await fetch(`${API_BASE}/guest/session`, {
             method: 'POST',
@@ -234,42 +83,22 @@ async function startGuest() {
             }
         }
 
-        if (!response.ok) {
+        if (!response.ok || !data || data.available !== true || data.guest !== true) {
             const serverMessage = data && data.error && typeof data.error.message === 'string'
                 ? data.error.message
-                : 'Guest mode is unavailable right now. Please sign in.';
+                : 'Chat is unavailable right now. Please refresh the page.';
             throw new Error(serverMessage);
         }
 
-        if (!data || data.guest !== true) {
-            throw new Error('Guest mode could not be started. Please sign in.');
-        }
-
-        showGuestChat(data.remaining, data.limit);
+        showChat();
+        setGuestRemaining(data.remaining);
         textInput.focus();
     } catch (error) {
-        authError.textContent = error && error.message
-            ? error.message
-            : 'Guest mode is unavailable right now. Please sign in.';
-    } finally {
-        guestButton.disabled = false;
-        guestButton.textContent = 'Continue as guest';
-    }
-}
-
-async function signOut() {
-    signOutButton.disabled = true;
-    try {
-        const response = await fetch(`${API_BASE}/auth/logout`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-        });
-        if (!response.ok) throw new Error('Sign-out failed');
-        window.location.reload();
-    } catch {
-        signOutButton.disabled = false;
-        setError('Could not sign out. Please try again.');
+        showSessionError(
+            error && error.message
+                ? error.message
+                : 'Could not reach the Dr.Health server. Please refresh the page.',
+        );
     }
 }
 
@@ -365,91 +194,9 @@ function setBusy(value) {
     } else {
         hideTyping();
     }
-    sendButton.disabled = value || (mode === 'guest' && guestExhausted);
-    uploadButton.disabled = value;
+    sendButton.disabled = value || guestExhausted || !started;
     chat.setAttribute('aria-busy', String(value));
     messages.setAttribute('aria-busy', String(value));
-}
-
-function formatBytes(bytes) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function safeFileName(name) {
-    const normalized = String(name || 'image');
-    return normalized.length > 80 ? `${normalized.slice(0, 77)}…` : normalized;
-}
-
-function validateFile(file) {
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        return 'Unsupported image type. Please use a JPEG, PNG, or WebP image.';
-    }
-    if (file.size === 0) {
-        return 'That image is empty. Please choose another file.';
-    }
-    if (file.size > MAX_FILE_BYTES) {
-        return `That image is too large. The limit is ${formatBytes(MAX_FILE_BYTES)}.`;
-    }
-    return null;
-}
-
-function canvasToBlob(canvas, type, quality) {
-    return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
-}
-
-async function optimizeImage(file) {
-    if (file.size <= IMAGE_COMPRESSION_THRESHOLD || typeof createImageBitmap !== 'function') {
-        return file;
-    }
-
-    let bitmap;
-    try {
-        bitmap = await createImageBitmap(file);
-    } catch {
-        return file;
-    }
-
-    try {
-        const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-
-        const context = canvas.getContext('2d');
-        if (!context) return file;
-
-        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-        let blob = await canvasToBlob(canvas, 'image/webp', IMAGE_QUALITY);
-        if (!blob) {
-            blob = await canvasToBlob(canvas, 'image/jpeg', IMAGE_QUALITY);
-        }
-        if (!blob || blob.size >= file.size) return file;
-
-        const extension =
-            blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/png' ? 'png' : 'webp';
-        const baseName = file.name.replace(/\.[^.]+$/, '') || 'image';
-        return new File([blob], `${baseName}.${extension}`, {
-            type: blob.type,
-            lastModified: Date.now(),
-        });
-    } catch {
-        return file;
-    } finally {
-        bitmap.close?.();
-    }
-}
-
-function showAttachment(file) {
-    if (!file) {
-        attachment.hidden = true;
-        attachment.textContent = '';
-        return;
-    }
-    attachment.textContent = `Attached: ${safeFileName(file.name)} (${formatBytes(file.size)})`;
-    attachment.hidden = false;
 }
 
 function playHeroAnimation() {
@@ -488,94 +235,44 @@ function extractRequestId(data) {
     return typeof requestId === 'string' && requestId.length <= 64 ? requestId : '';
 }
 
-function trimHistory(turns, maxTurns = MAX_HISTORY_TURNS, maxChars = MAX_HISTORY_CHARS) {
-    const trimmed = turns.slice(-maxTurns);
+function trimHistory(turns) {
+    const trimmed = turns.slice(-MAX_HISTORY_TURNS);
     let totalChars = trimmed.reduce((total, turn) => total + turn.text.length, 0);
-    while (trimmed.length > 0 && totalChars > maxChars) {
+    while (trimmed.length > 0 && totalChars > MAX_HISTORY_CHARS) {
         totalChars -= trimmed.shift().text.length;
     }
     return trimmed;
 }
 
 async function sendMessage() {
-    if (busy || IS_FILE_PROTOCOL) return;
+    if (busy || !started || IS_FILE_PROTOCOL) return;
 
-    const isGuest = mode === 'guest';
-    const maxMessageChars = isGuest ? MAX_GUEST_MESSAGE_CHARS : MAX_MESSAGE_CHARS;
-    const maxHistoryTurns = isGuest ? MAX_GUEST_HISTORY_TURNS : MAX_HISTORY_TURNS;
-    const maxHistoryChars = isGuest ? MAX_GUEST_HISTORY_CHARS : MAX_HISTORY_CHARS;
     const text = textInput.value.trim();
 
-    if (isGuest && guestExhausted) {
-        setError('Guest limit reached. Sign in to continue.');
+    if (guestExhausted) {
+        setError('Daily question limit reached. Please come back tomorrow.');
         return;
     }
-    if (isGuest && uploadedImage) {
-        setError('Guest mode is text-only. Sign in to attach an image.');
-        return;
-    }
-    if (!text && !uploadedImage) {
-        setError('Type a message or attach an image first.');
+    if (!text) {
+        setError('Type a question first.');
         textInput.focus();
         return;
     }
-    if (text.length > maxMessageChars) {
-        setError(`Messages are limited to ${maxMessageChars} characters in this mode.`);
+    if (text.length > MAX_MESSAGE_CHARS) {
+        setError(`Messages are limited to ${MAX_MESSAGE_CHARS} characters.`);
         return;
     }
 
     setError('');
 
-    let attachedFile = isGuest ? null : uploadedImage;
-    const previousHistory = trimHistory(chatHistory, maxHistoryTurns, maxHistoryChars);
-    const userBubble = attachedFile
-        ? text
-            ? `${text}\nImage attached`
-            : 'Image attached'
-        : text;
-    addMessage('user', userBubble);
+    const previousHistory = trimHistory(chatHistory);
+    addMessage('user', text);
 
     textInput.value = '';
-    uploadedImage = null;
-    imageInput.value = '';
-    showAttachment(null);
     setBusy(true);
-
-    if (attachedFile) {
-        attachment.textContent = 'Preparing image…';
-        attachment.hidden = false;
-        try {
-            attachedFile = await optimizeImage(attachedFile);
-        } catch {
-            // Keep the original file if the browser cannot resize it.
-        }
-        showAttachment(attachedFile);
-    }
-
-    const requestOptions = {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-        signal: null,
-    };
-
-    if (isGuest) {
-        requestOptions.headers['Content-Type'] = 'application/json';
-        requestOptions.body = JSON.stringify({
-            message: text,
-            history: previousHistory,
-        });
-    } else {
-        const formData = new FormData();
-        if (text) formData.append('message', text);
-        if (attachedFile) formData.append('image', attachedFile, attachedFile.name);
-        if (previousHistory.length > 0) formData.append('history', JSON.stringify(previousHistory));
-        requestOptions.body = formData;
-    }
 
     let timedOut = false;
     const controller = new AbortController();
-    requestOptions.signal = controller.signal;
     const timeoutId = setTimeout(() => {
         timedOut = true;
         controller.abort();
@@ -584,8 +281,20 @@ async function sendMessage() {
     try {
         let response;
         try {
-            response = await fetch(`${API_BASE}${isGuest ? '/guest/chat' : '/chat'}`, requestOptions);
-        } catch (error) {
+            response = await fetch(`${API_BASE}/guest/chat`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: text,
+                    history: previousHistory,
+                }),
+                signal: controller.signal,
+            });
+        } catch {
             if (timedOut) {
                 throw new Error('The request timed out. Please try again.');
             }
@@ -604,13 +313,8 @@ async function sendMessage() {
             }
         }
 
-        if (response.status === 401) {
-            showAuthGate('Please sign in again.');
-            return;
-        }
-
         if (!response.ok) {
-            if (isGuest && data && data.error && data.error.code === 'GUEST_LIMIT_REACHED') {
+            if (data && data.error && data.error.code === 'GUEST_LIMIT_REACHED') {
                 setGuestRemaining(0);
             }
 
@@ -628,30 +332,22 @@ async function sendMessage() {
             throw new Error('The assistant returned an empty response. Please try again.');
         }
 
-        if (isGuest && data && Number.isInteger(data.remaining)) {
+        if (data && Number.isInteger(data.remaining)) {
             setGuestRemaining(data.remaining);
         }
 
         addMessage('assistant', reply);
 
-        const historyText = text
-            ? attachedFile
-                ? `${text} [the user attached an image]`
-                : text
-            : 'The user attached an image.';
         chatHistory = trimHistory(
             previousHistory.concat([
-                { role: 'user', text: historyText },
+                { role: 'user', text },
                 { role: 'model', text: reply },
             ]),
-            maxHistoryTurns,
-            maxHistoryChars,
         );
     } catch (error) {
         setError(error && error.message ? error.message : 'Something went wrong. Please try again.');
     } finally {
         setBusy(false);
-        showAttachment(null);
         textInput.focus();
     }
 }
@@ -665,56 +361,16 @@ window.addEventListener('resize', () => {
     if (isNearBottom()) scrollMessagesToBottom();
 });
 
-uploadButton.addEventListener('click', () => {
-    if (!busy && mode !== 'guest') imageInput.click();
-});
-
-guestButton.addEventListener('click', startGuest);
-
-signOutButton.addEventListener('click', signOut);
-
 if (heroPlay && heroAnimation) {
     heroPlay.addEventListener('click', playHeroAnimation);
 }
 
-imageInput.addEventListener('change', () => {
-    if (mode === 'guest') {
-        imageInput.value = '';
-        setError('Guest mode is text-only. Sign in to attach an image.');
-        return;
-    }
-
-    const file = imageInput.files && imageInput.files[0];
-    if (!file) {
-        uploadedImage = null;
-        showAttachment(null);
-        return;
-    }
-
-    const validationError = validateFile(file);
-    if (validationError) {
-        setError(validationError);
-        uploadedImage = null;
-        imageInput.value = '';
-        showAttachment(null);
-        return;
-    }
-
-    uploadedImage = file;
-    showAttachment(file);
-    setError('');
-});
-
 if (IS_FILE_PROTOCOL) {
-    showAuthGate(
+    showSessionError(
         'Dr.Health must be opened through its server. Run "npm start" and visit http://localhost:3000.',
     );
-    authButton.hidden = true;
-    guestButton.hidden = true;
-    sendButton.disabled = true;
-    uploadButton.disabled = true;
 } else {
-    loadSession();
+    startGuestSession();
 }
 
 footerText.textContent = `© ${new Date().getFullYear()} Dr.Health. All rights reserved.`;
