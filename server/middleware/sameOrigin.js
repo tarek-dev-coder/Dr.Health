@@ -1,8 +1,8 @@
 import { forbidden } from '../lib/errors.js';
 
 /**
- * Defense in depth for cookie-authenticated mutations. SameSite=Lax already
- * blocks most cross-site POSTs, but also check Fetch Metadata.
+ * Defense in depth for state-changing requests. Same-origin fetch is expected;
+ * cross-site browser requests are rejected before they reach a route.
  */
 export function requireSameOrigin(req, res, next) {
   const fetchSite = req.get('sec-fetch-site');

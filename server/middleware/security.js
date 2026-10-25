@@ -50,15 +50,8 @@ export function permissionsPolicy(req, res, next) {
   next();
 }
 
-function isHttpsRequest(req) {
-  if (req.secure) return true;
-  const forwardedProto = req.get('x-forwarded-proto');
-  if (!forwardedProto) return false;
-  return forwardedProto.split(',')[0].trim().toLowerCase() === 'https';
-}
-
 export function httpsRedirect(req, res, next) {
-  if (!config.enforceHttps || isHttpsRequest(req)) return next();
+  if (!config.enforceHttps || req.secure) return next();
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return next(new AppError(403, 'HTTPS_REQUIRED', 'HTTPS is required for this request.'));

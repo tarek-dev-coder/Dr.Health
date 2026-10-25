@@ -9,21 +9,27 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: GUEST_SESSION_SECRET
-        generateValue: true
       - key: ALLOWED_HOSTS
         sync: false
       - key: TRUST_PROXY
         value: "1"
       - key: ENFORCE_HTTPS
         value: "true"
-      - key: GUEST_API_URL
-        value: https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions
-      - key: GUEST_MODEL
+      - key: OVH_BASE_URL
+        value: https://oai.endpoints.kepler.ai.cloud.ovh.net/v1
+      - key: OVH_MODEL
         value: Meta-Llama-3_3-70B-Instruct
-      - key: GUEST_DAILY_LIMIT
-        value: "5"
-      - key: GUEST_IP_DAILY_LIMIT
-        value: "10"
-      - key: GUEST_GLOBAL_DAILY_LIMIT
-        value: "200"
+      - key: OVH_API_KEY
+        value: empty-if-anonymous
+      - key: LLM7_BASE_URL
+        value: https://api.llm7.io/v1
+      - key: LLM7_MODEL
+        value: codestral-latest
+      - key: LLM7_API_KEY
+        value: unused
+      - key: CHAT_RATE_LIMIT
+        value: "30"
+      - key: CHAT_MAX_CONCURRENT
+        value: "3"
+      - key: GLOBAL_RATE_LIMIT
+        value: "300"

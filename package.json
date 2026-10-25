@@ -1,8 +1,8 @@
 {
   "name": "dr-health",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
-  "description": "Dr.Health - free, text-only health information assistant with quota-limited access",
+  "description": "Dr.Health - free health information assistant with two-provider fallback and text/code attachments",
   "type": "module",
   "engines": {
     "node": ">=20.19.0"
@@ -16,12 +16,13 @@
   },
   "dependencies": {
     "compression": "^1.8.2",
-    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
+    "multer": "^2.5.0",
+    "openai": "^7.43.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

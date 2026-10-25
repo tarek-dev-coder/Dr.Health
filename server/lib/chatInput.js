@@ -5,7 +5,7 @@ import { sanitizeText } from './text.js';
 
 const MAX_RAW_HISTORY_CHARS = 250000;
 
-export function parseMessage(rawMessage, maxChars = config.guestMaxMessageChars) {
+export function parseMessage(rawMessage, maxChars = config.chatMaxMessageChars) {
   if (rawMessage === undefined) return '';
 
   if (typeof rawMessage !== 'string') {
@@ -22,9 +22,9 @@ export function parseMessage(rawMessage, maxChars = config.guestMaxMessageChars)
 export function parseHistory(
   rawHistory,
   {
-    maxTurns = config.guestMaxHistoryTurns,
-    maxChars = config.guestMaxHistoryChars,
-    maxTurnChars = config.guestMaxMessageChars,
+    maxTurns = config.chatMaxHistoryTurns,
+    maxChars = config.chatMaxHistoryChars,
+    maxTurnChars = config.chatMaxMessageChars,
   } = {},
 ) {
   if (rawHistory === undefined || rawHistory === null || rawHistory === '') return [];

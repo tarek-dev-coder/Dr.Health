@@ -9,10 +9,10 @@ dotenv.config({ path: path.join(rootDir, '.env'), quiet: true });
 
 const rawEnv = { ...process.env };
 
-// Treat "FOO=" in .env as unset for optional secrets and overrides.
+// Treat "FOO=" in .env as unset so documented defaults apply.
 for (const key of [
-  'GUEST_SESSION_SECRET',
-  'GUEST_API_KEY',
+  'OVH_API_KEY',
+  'LLM7_API_KEY',
   'ALLOWED_ORIGINS',
   'ALLOWED_HOSTS',
   'ENFORCE_HTTPS',
@@ -22,47 +22,50 @@ for (const key of [
   }
 }
 
-if (!rawEnv.GUEST_SESSION_SECRET) {
-  throw new Error(
-    'GUEST_SESSION_SECRET is required. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64url\'))"',
-  );
-}
-
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 
-  // Signs the HttpOnly guest cookie. There are no accounts or user sessions.
-  GUEST_SESSION_SECRET: z
-    .string()
-    .min(32, 'GUEST_SESSION_SECRET must be at least 32 characters'),
-
-  // The server calls one OpenAI-compatible endpoint. The default is keyless;
-  // an optional server-side token can be used for providers that require one.
-  GUEST_API_URL: z
+  // OVHcloud AI Endpoints. The anonymous tier is keyless; the placeholder
+  // key is accepted by the endpoint.
+  OVH_BASE_URL: z
     .string()
     .trim()
     .url()
-    .default('https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions'),
-  GUEST_MODEL: z
+    .default('https://oai.endpoints.kepler.ai.cloud.ovh.net/v1'),
+  OVH_MODEL: z
     .string()
     .trim()
-    .regex(/^[a-zA-Z0-9._:/-]{1,120}$/, 'GUEST_MODEL contains invalid characters')
+    .regex(/^[a-zA-Z0-9._:/-]{1,120}$/, 'OVH_MODEL contains invalid characters')
     .default('Meta-Llama-3_3-70B-Instruct'),
-  GUEST_API_KEY: z.string().trim().min(1).optional(),
-  GUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(45000),
-  GUEST_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(50).max(2000).default(500),
-  GUEST_MAX_MESSAGE_CHARS: z.coerce.number().int().min(100).max(10000).default(2000),
-  GUEST_MAX_HISTORY_TURNS: z.coerce.number().int().min(0).max(20).default(4),
-  GUEST_MAX_HISTORY_CHARS: z.coerce.number().int().min(0).max(20000).default(4000),
-  GUEST_MAX_RESPONSE_CHARS: z.coerce.number().int().min(500).max(20000).default(6000),
-  GUEST_DAILY_LIMIT: z.coerce.number().int().min(1).max(1000).default(5),
-  GUEST_IP_DAILY_LIMIT: z.coerce.number().int().min(1).max(10000).default(10),
-  GUEST_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(100000).default(200),
-  GUEST_RATE_LIMIT: z.coerce.number().int().min(1).max(1000).default(5),
-  GUEST_RATE_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(10),
-  GUEST_MAX_CONCURRENT: z.coerce.number().int().min(1).max(20).default(2),
-  GUEST_SESSION_TTL_MINUTES: z.coerce.number().int().min(5).max(10080).default(1440),
+  OVH_API_KEY: z.string().trim().min(1).default('empty-if-anonymous'),
+  OVH_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(40000),
+  OVH_RPM: z.coerce.number().int().min(1).max(60).default(2),
+
+  // LLM7.io. The anonymous tier uses a non-empty placeholder key.
+  LLM7_BASE_URL: z.string().trim().url().default('https://api.llm7.io/v1'),
+  LLM7_MODEL: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z0-9._:/-]{1,120}$/, 'LLM7_MODEL contains invalid characters')
+    .default('codestral-latest'),
+  LLM7_API_KEY: z.string().trim().min(1).default('unused'),
+  LLM7_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(20000),
+  LLM7_RPM: z.coerce.number().int().min(1).max(60).default(25),
+  LLM7_RETRY_DELAY_MS: z.coerce.number().int().min(0).max(10000).default(2000),
+  LLM7_MAX_RETRIES: z.coerce.number().int().min(0).max(3).default(2),
+
+  CHAT_TIMEOUT_MS: z.coerce.number().int().min(5000).max(120000).default(60000),
+  CHAT_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(50).max(4000).default(800),
+  CHAT_MAX_MESSAGE_CHARS: z.coerce.number().int().min(100).max(20000).default(4000),
+  CHAT_MAX_HISTORY_TURNS: z.coerce.number().int().min(0).max(20).default(12),
+  CHAT_MAX_HISTORY_CHARS: z.coerce.number().int().min(0).max(60000).default(48000),
+  CHAT_MAX_RESPONSE_CHARS: z.coerce.number().int().min(500).max(40000).default(12000),
+  CHAT_MAX_FILE_MB: z.coerce.number().min(0.1).max(5).default(0.25),
+  CHAT_MAX_FILE_CHARS: z.coerce.number().int().min(1000).max(100000).default(24000),
+  CHAT_MAX_CONCURRENT: z.coerce.number().int().min(1).max(10).default(3),
+  CHAT_RATE_LIMIT: z.coerce.number().int().min(1).max(1000).default(30),
+  CHAT_RATE_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(1),
 
   ALLOWED_ORIGINS: z.string().default(''),
   ALLOWED_HOSTS: z.string().default(''),
@@ -96,7 +99,6 @@ function parseList(value) {
 function parseTrustProxy(value) {
   const normalized = value.trim().toLowerCase();
   if (normalized === 'false' || normalized === '0' || normalized === '') return false;
-  // Trusting exactly one proxy hop is the safe default when "true" is used.
   if (normalized === 'true') return 1;
   if (/^\d+$/.test(normalized)) return Number(normalized);
   return value;
@@ -104,7 +106,7 @@ function parseTrustProxy(value) {
 
 const allowedOrigins = parseList(env.ALLOWED_ORIGINS).map((origin) => {
   if (origin === '*') {
-    throw new Error('ALLOWED_ORIGINS must not contain "*" when credentials are supported');
+    throw new Error('ALLOWED_ORIGINS must not contain "*"');
   }
   let url;
   try {
@@ -129,8 +131,13 @@ const allowedHosts = parseList(env.ALLOWED_HOSTS).map((host) => {
 const enforceHttps =
   env.ENFORCE_HTTPS !== undefined ? env.ENFORCE_HTTPS === 'true' : isProduction;
 
-if (isProduction && new URL(env.GUEST_API_URL).protocol !== 'https:') {
-  throw new Error('GUEST_API_URL must use HTTPS in production');
+if (isProduction) {
+  if (new URL(env.OVH_BASE_URL).protocol !== 'https:') {
+    throw new Error('OVH_BASE_URL must use HTTPS in production');
+  }
+  if (new URL(env.LLM7_BASE_URL).protocol !== 'https:') {
+    throw new Error('LLM7_BASE_URL must use HTTPS in production');
+  }
 }
 
 if (isProduction && enforceHttps && allowedHosts.length === 0) {
@@ -145,24 +152,40 @@ export const config = Object.freeze({
   port: env.PORT,
   publicDir: path.join(rootDir, 'public'),
 
-  guestSessionSecret: env.GUEST_SESSION_SECRET,
-  guestApiUrl: env.GUEST_API_URL,
-  guestModel: env.GUEST_MODEL,
-  guestApiKey: env.GUEST_API_KEY,
-  guestTimeoutMs: env.GUEST_TIMEOUT_MS,
-  guestMaxOutputTokens: env.GUEST_MAX_OUTPUT_TOKENS,
-  guestMaxMessageChars: env.GUEST_MAX_MESSAGE_CHARS,
-  guestMaxHistoryTurns: env.GUEST_MAX_HISTORY_TURNS,
-  guestMaxHistoryChars: env.GUEST_MAX_HISTORY_CHARS,
-  guestMaxResponseChars: env.GUEST_MAX_RESPONSE_CHARS,
-  guestDailyLimit: env.GUEST_DAILY_LIMIT,
-  guestIpDailyLimit: env.GUEST_IP_DAILY_LIMIT,
-  guestGlobalDailyLimit: env.GUEST_GLOBAL_DAILY_LIMIT,
-  guestRateLimit: env.GUEST_RATE_LIMIT,
-  guestRateWindowMs: env.GUEST_RATE_WINDOW_MINUTES * 60 * 1000,
-  guestMaxConcurrent: env.GUEST_MAX_CONCURRENT,
-  guestSessionTtlSeconds: env.GUEST_SESSION_TTL_MINUTES * 60,
-  guestCookieName: isProduction ? '__Host-dh_guest' : 'dh_guest',
+  providers: Object.freeze({
+    ovh: Object.freeze({
+      id: 'ovh',
+      baseUrl: env.OVH_BASE_URL.replace(/\/$/, ''),
+      model: env.OVH_MODEL,
+      apiKey: env.OVH_API_KEY,
+      timeoutMs: env.OVH_TIMEOUT_MS,
+      rpm: env.OVH_RPM,
+      cooldownMs: 30000,
+    }),
+    llm7: Object.freeze({
+      id: 'llm7',
+      baseUrl: env.LLM7_BASE_URL.replace(/\/$/, ''),
+      model: env.LLM7_MODEL,
+      apiKey: env.LLM7_API_KEY,
+      timeoutMs: env.LLM7_TIMEOUT_MS,
+      rpm: env.LLM7_RPM,
+      cooldownMs: 5000,
+      retryDelayMs: env.LLM7_RETRY_DELAY_MS,
+      maxRetries: env.LLM7_MAX_RETRIES,
+    }),
+  }),
+
+  chatTimeoutMs: env.CHAT_TIMEOUT_MS,
+  chatMaxOutputTokens: env.CHAT_MAX_OUTPUT_TOKENS,
+  chatMaxMessageChars: env.CHAT_MAX_MESSAGE_CHARS,
+  chatMaxHistoryTurns: env.CHAT_MAX_HISTORY_TURNS,
+  chatMaxHistoryChars: env.CHAT_MAX_HISTORY_CHARS,
+  chatMaxResponseChars: env.CHAT_MAX_RESPONSE_CHARS,
+  chatMaxFileBytes: Math.floor(env.CHAT_MAX_FILE_MB * 1024 * 1024),
+  chatMaxFileChars: env.CHAT_MAX_FILE_CHARS,
+  chatMaxConcurrent: env.CHAT_MAX_CONCURRENT,
+  chatRateLimit: env.CHAT_RATE_LIMIT,
+  chatRateWindowMs: env.CHAT_RATE_WINDOW_MINUTES * 60 * 1000,
 
   allowedOrigins,
   allowedHosts,
