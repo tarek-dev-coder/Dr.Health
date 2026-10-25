@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dr.Health provides general health information. It is not a substitute for professional medical care.">
+    <meta name="description" content="Dr.Health turns complicated health questions into clear, evidence-led answers. Direct, private, and built for real life.">
     <meta name="color-scheme" content="dark light">
     <meta name="theme-color" content="#0d1210">
-    <title>Dr.Health — General health information</title>
+    <title>Dr.Health — Health, made clear</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" defer></script>
@@ -44,21 +44,21 @@
             <header class="chat-header">
                 <div class="chat-heading">
                     <p class="section-label">Ask Dr.Health</p>
-                    <h1>Health questions, answered plainly.</h1>
-                    <p class="chat-note">General information only · Not medical advice</p>
+                    <h1>Health, made clear.</h1>
+                    <p class="chat-note">Direct answers · Evidence-led · No judgment</p>
                 </div>
                 <button type="button" id="newChatButton" class="ghost-button">New chat</button>
             </header>
 
             <div id="messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Conversation">
                 <div id="emptyState" class="empty-state">
-                    <p class="empty-title">Start with a question.</p>
+                    <p class="empty-title">What do you want to understand?</p>
                     <p class="empty-copy">
-                        Ask about nutrition, fitness, first aid, or everyday wellness.
-                        You can attach a text or code file.
+                        Ask about symptoms, nutrition, fitness, first aid, or the question
+                        you keep circling. Attach a text or code file when it helps.
                     </p>
                     <div class="prompt-chips" aria-label="Example questions">
-                        <button type="button" class="prompt-chip" data-prompt="What is a balanced breakfast?">Balanced breakfast</button>
+                        <button type="button" class="prompt-chip" data-prompt="Why am I always tired?">Why am I always tired?</button>
                         <button type="button" class="prompt-chip" data-prompt="How should I recover after a long run?">Recovery after a run</button>
                         <button type="button" class="prompt-chip" data-prompt="What should I keep in a basic first-aid kit?">First-aid kit</button>
                     </div>
@@ -116,11 +116,12 @@
 
         <aside class="intro" aria-labelledby="about-title">
             <div class="intro-copy">
-                <p class="eyebrow">General health information</p>
-                <h2 id="about-title">Ask about your health, without the noise.</h2>
+                <p class="eyebrow">Health, without the noise</p>
+                <h2 id="about-title">The clarity you want. The context you need.</h2>
                 <p class="lede">
-                    Practical answers on nutrition, fitness, first aid, and everyday wellness.
-                    Dr.Health is an information tool, not a doctor.
+                    Dr.Health cuts through conflicting advice with direct, evidence-led
+                    answers on nutrition, fitness, first aid, and everyday wellness.
+                    No lectures. No judgment. Just a clearer next step.
                 </p>
             </div>
 
@@ -149,10 +150,10 @@
             <div class="info-card info-card-topics">
                 <p class="section-label">Good for</p>
                 <ul class="topic-list">
-                    <li>Meal and nutrition questions</li>
-                    <li>Exercise and recovery basics</li>
-                    <li>Everyday first-aid guidance</li>
-                    <li>Reading text and code files</li>
+                    <li>Nutrition that fits real life</li>
+                    <li>Training, recovery, and sleep</li>
+                    <li>First aid, explained calmly</li>
+                    <li>Text and code file analysis</li>
                 </ul>
             </div>
 
@@ -160,13 +161,13 @@
                 <p class="section-label">Files</p>
                 <p class="info-copy">
                     Attach plain text, Markdown, CSV, JSON, logs, or source code.
-                    Images, PDFs, audio, and video are not supported by this chat.
+                    Text and code only. Dr.Health works from what's in the file.
                 </p>
             </div>
 
             <p class="disclaimer">
-                If this is an emergency, contact your local emergency number.
-                Dr.Health does not diagnose or prescribe.
+                If this is an emergency, call your local emergency number first.
+                Dr.Health gives you context, not a diagnosis.
             </p>
         </aside>
     </main>

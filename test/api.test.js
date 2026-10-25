@@ -204,8 +204,10 @@ test('chat uses OVH first for health questions and never leaks provider details'
   assert.match(payload.messages[0].content, /Be confident and specific/);
   assert.match(payload.messages[0].content, /do not bury the answer in hedging/);
   assert.match(payload.messages[0].content, /clearly unrelated to health/);
-  assert.match(payload.messages[0].content, /one short, friendly sentence/);
+  assert.match(payload.messages[0].content, /one short, confident sentence/);
   assert.match(payload.messages[0].content, /Do not open with a disclaimer/);
+  assert.match(payload.messages[0].content, /evidence-led health guidance/);
+  assert.match(payload.messages[0].content, /context, not a diagnosis/);
   assert.match(payload.messages[0].content, /not a clinician/);
   assert.match(payload.messages[0].content, /Never diagnose, prescribe/);
   assert.match(payload.messages[0].content, /exact medication doses/);
