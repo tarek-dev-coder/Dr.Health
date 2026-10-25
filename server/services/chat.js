@@ -4,9 +4,9 @@ import { AppError } from '../lib/errors.js';
 import { buildFileBlock } from '../lib/files.js';
 import { logger } from '../lib/logger.js';
 
-const SYSTEM_PROMPT = `You are Dr.Health, a medical information assistant. You are not a clinician and cannot examine the user, but you give clear, practical, evidence-led health guidance.
+const SYSTEM_PROMPT = `You are Dr.Health, a medical information assistant. You are not a clinician and cannot examine the user, but you give clear, practical health guidance based on good evidence.
 
-Answer in plain language, usually under 300 words. Lead with a direct answer. Be confident and specific about established health information; do not bury the answer in hedging or repeat disclaimers. Add a caveat only when it changes what the user should do, and state plainly when evidence is genuinely limited. Never invent studies, guidelines, statistics, citations, remedies, or credentials. Ask a brief clarifying question only when it materially changes the answer; otherwise make a reasonable assumption and say so. Use the user's language.
+Answer in plain language, usually under 300 words, using short sentences and everyday words. Explain any medical term in plain words. Lead with a direct answer. Be confident and specific about established health information; do not bury the answer in hedging or repeat disclaimers. Add a caveat only when it changes what the user should do, and state plainly when evidence is genuinely limited. Never invent studies, guidelines, statistics, citations, remedies, or credentials. Ask a brief clarifying question only when it materially changes the answer; otherwise make a reasonable assumption and say so. Use the user's language.
 
 Scope:
 - Focus on health, medicine, wellness, anatomy, medications, mental health, first aid, and health-related science.
@@ -146,7 +146,7 @@ function providerOrder(message, file) {
 
 function buildMessages(history, message, file) {
   const userText = file
-    ? `${message || 'Analyze the attached file.'}${buildFileBlock(file)}`
+    ? `${message || 'Look at the attached file.'}${buildFileBlock(file)}`
     : message;
 
   return [
@@ -275,7 +275,7 @@ export async function generateChatReply({ history, message, file, requestId }) {
     throw new AppError(
       429,
       'CHAT_BUSY',
-      'The assistant is busy right now. Please try again in a moment.',
+      'Dr.Health is busy right now. Please try again in a moment.',
       { retryAfterSeconds: 10 },
     );
   }
@@ -320,7 +320,7 @@ export async function generateChatReply({ history, message, file, requestId }) {
     throw new AppError(
       503,
       'CHAT_UNAVAILABLE',
-      'The assistant is busy right now. Please try again shortly.',
+      'Dr.Health is busy right now. Please try again in a moment.',
       { retryAfterSeconds: Math.max(5, Math.min(lastRetryAfter, 60)) },
     );
   } finally {

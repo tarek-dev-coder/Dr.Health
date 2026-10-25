@@ -200,13 +200,15 @@ test('chat uses OVH first for health questions and never leaks provider details'
   assert.equal(payload.messages.length, 4);
   assert.equal(payload.messages[0].role, 'system');
   assert.match(payload.messages[0].content, /under 300 words/);
+  assert.match(payload.messages[0].content, /short sentences and everyday words/);
+  assert.match(payload.messages[0].content, /Explain any medical term/);
   assert.match(payload.messages[0].content, /Lead with a direct answer/);
   assert.match(payload.messages[0].content, /Be confident and specific/);
   assert.match(payload.messages[0].content, /do not bury the answer in hedging/);
   assert.match(payload.messages[0].content, /clearly unrelated to health/);
   assert.match(payload.messages[0].content, /one short, confident sentence/);
   assert.match(payload.messages[0].content, /Do not open with a disclaimer/);
-  assert.match(payload.messages[0].content, /evidence-led health guidance/);
+  assert.match(payload.messages[0].content, /based on good evidence/);
   assert.match(payload.messages[0].content, /context, not a diagnosis/);
   assert.match(payload.messages[0].content, /not a clinician/);
   assert.match(payload.messages[0].content, /Never diagnose, prescribe/);

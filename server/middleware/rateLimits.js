@@ -5,7 +5,7 @@ function rateLimitHandler(req, res) {
   res.status(429).json({
     error: {
       code: 'RATE_LIMITED',
-      message: 'Too many requests. Please wait a moment and try again.',
+      message: 'Too many requests. Wait a moment and try again.',
       requestId: req.id,
     },
   });

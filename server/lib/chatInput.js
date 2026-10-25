@@ -9,12 +9,12 @@ export function parseMessage(rawMessage, maxChars = config.chatMaxMessageChars) 
   if (rawMessage === undefined) return '';
 
   if (typeof rawMessage !== 'string') {
-    throw badRequest('The message must be text.', 'INVALID_MESSAGE');
+    throw badRequest('Please type a message.', 'INVALID_MESSAGE');
   }
 
   const message = sanitizeText(rawMessage);
   if (message.length > maxChars) {
-    throw badRequest(`The message must be ${maxChars} characters or fewer.`, 'MESSAGE_TOO_LONG');
+    throw badRequest(`Your message is too long. Keep it under ${maxChars} characters.`, 'MESSAGE_TOO_LONG');
   }
   return message;
 }
@@ -32,15 +32,15 @@ export function parseHistory(
   let value = rawHistory;
   if (typeof rawHistory === 'string') {
     if (rawHistory.length > MAX_RAW_HISTORY_CHARS) {
-      throw badRequest('Conversation history is too large. Start a new chat.', 'HISTORY_TOO_LARGE');
+      throw badRequest('This chat is too long. Start a new chat.', 'HISTORY_TOO_LARGE');
     }
     try {
       value = JSON.parse(rawHistory);
     } catch {
-      throw badRequest('Conversation history must be valid JSON.', 'INVALID_HISTORY');
+      throw badRequest('This chat could not be read. Start a new chat.', 'INVALID_HISTORY');
     }
   } else if (typeof rawHistory !== 'object') {
-    throw badRequest('Conversation history is invalid.', 'INVALID_HISTORY');
+    throw badRequest('This chat could not be read. Start a new chat.', 'INVALID_HISTORY');
   }
 
   const turnSchema = z
@@ -51,7 +51,7 @@ export function parseHistory(
     .strict();
   const parsed = z.array(turnSchema).max(maxTurns).safeParse(value);
   if (!parsed.success) {
-    throw badRequest('Conversation history is invalid.', 'INVALID_HISTORY');
+    throw badRequest('This chat could not be read. Start a new chat.', 'INVALID_HISTORY');
   }
 
   const turns = parsed.data
@@ -60,7 +60,7 @@ export function parseHistory(
 
   const totalChars = turns.reduce((total, turn) => total + turn.text.length, 0);
   if (totalChars > maxChars) {
-    throw badRequest('Conversation history is too large. Start a new chat.', 'HISTORY_TOO_LARGE');
+    throw badRequest('This chat is too long. Start a new chat.', 'HISTORY_TOO_LARGE');
   }
 
   return turns;
