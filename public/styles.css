@@ -799,15 +799,6 @@ a {
     line-height: 1.6;
 }
 
-.disclaimer {
-    margin: 22px 0 0;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
-    color: var(--ink-faint);
-    font-size: 0.74rem;
-    line-height: 1.6;
-}
-
 /* Footer ----------------------------------------------------------------- */
 
 .page-footer {
@@ -909,8 +900,7 @@ a {
         grid-template-areas:
             "copy copy"
             "topics hero"
-            "files hero"
-            "disclaimer disclaimer";
+            "files hero";
         gap: 20px 32px;
         align-items: start;
     }
@@ -938,10 +928,6 @@ a {
         margin-top: 0;
     }
 
-    .disclaimer {
-        grid-area: disclaimer;
-        margin-top: 0;
-    }
 }
 
 @media (max-width: 640px) {
@@ -1033,10 +1019,6 @@ a {
 
     .info-card {
         margin-top: 16px;
-    }
-
-    .disclaimer {
-        margin-top: 18px;
     }
 
     .page-footer {
