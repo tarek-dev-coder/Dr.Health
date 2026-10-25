@@ -23,6 +23,7 @@ const removeFileButton = document.getElementById('removeFileButton');
 const loader = document.getElementById('loader');
 const errorDiv = document.getElementById('error');
 const emptyState = document.getElementById('emptyState');
+const promptChips = document.getElementById('promptChips');
 const footerText = document.getElementById('footer-text');
 const themeToggle = document.getElementById('themeToggle');
 const newChatButton = document.getElementById('newChatButton');
@@ -296,6 +297,41 @@ function resetChat() {
     textInput.focus();
 }
 
+async function loadSuggestions() {
+    if (!promptChips) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/suggestions`, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) return;
+
+        const data = await readJson(response);
+        const suggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        const valid = suggestions
+            .filter((question) => typeof question === 'string')
+            .map((question) => question.trim())
+            .filter((question) => question.length > 0 && question.length <= 90)
+            .slice(0, 3);
+
+        if (valid.length === 0 || !emptyState?.isConnected) return;
+
+        promptChips.replaceChildren();
+        for (const question of valid) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'prompt-chip';
+            button.dataset.prompt = question;
+            button.textContent = question;
+            promptChips.appendChild(button);
+        }
+        promptChips.hidden = false;
+    } catch {
+        // Suggestions are optional; the chat still works without them.
+    }
+}
+
 async function sendMessage() {
     if (busy) return;
 
@@ -459,16 +495,17 @@ removeFileButton.addEventListener('click', () => {
 
 newChatButton.addEventListener('click', resetChat);
 
-for (const chip of document.querySelectorAll('[data-prompt]')) {
-    chip.addEventListener('click', () => {
-        textInput.value = chip.dataset.prompt || '';
-        textInput.focus();
-    });
-}
+promptChips?.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-prompt]');
+    if (!chip) return;
+    textInput.value = chip.dataset.prompt || '';
+    textInput.focus();
+});
 
 window.addEventListener('resize', () => {
     if (isNearBottom()) scrollMessagesToBottom();
 });
 
 initTheme();
+loadSuggestions();
 footerText.textContent = `© ${new Date().getFullYear()} Dr.Health. All rights reserved.`;

@@ -118,6 +118,7 @@ not log prompts, replies, files, cookies, or provider tokens.
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
 | `GET` | `/api/health` | Health check |
+| `GET` | `/api/suggestions` | AI-generated example questions |
 | `POST` | `/api/chat` | Send a message and/or one text/code file |
 
 `POST /api/chat` accepts `multipart/form-data` with:
@@ -128,6 +129,10 @@ not log prompts, replies, files, cookies, or provider tokens.
 - `file` — optional single text/code file.
 
 A JSON body with `message` and `history` also works when no file is attached.
+
+`GET /api/suggestions` returns three AI-generated example questions. A batch is
+cached in memory for 15 minutes and refreshed when stale. If no valid batch is
+available, it returns `{ "suggestions": [] }` and the UI hides the examples.
 
 Success:
 

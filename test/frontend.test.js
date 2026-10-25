@@ -61,6 +61,18 @@ test('the UI has no sign-in surface and supports text/code attachments', () => {
   assert.ok(!html.includes('provider may use'));
 });
 
+test('example questions are loaded from the suggestions API, not hardcoded', () => {
+  assert.match(html, /id="promptChips"/);
+  assert.ok(!html.includes('data-prompt='));
+  assert.ok(!html.includes('Why am I always tired?'));
+  assert.ok(!html.includes('Recovery after a run'));
+  assert.ok(!html.includes('First-aid kit'));
+  assert.match(appJs, /API_BASE}\/suggestions/);
+  assert.match(appJs, /promptChips/);
+  assert.match(appJs, /loadSuggestions\(\);/);
+  assert.ok(!appJs.includes('Why am I always tired?'));
+});
+
 test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('General health information'));
   assert.ok(!html.includes('General information only'));

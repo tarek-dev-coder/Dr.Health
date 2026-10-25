@@ -349,14 +349,15 @@ a {
 }
 
 .empty-state {
-    max-width: 420px;
+    max-width: 680px;
     margin: auto;
     padding: 12px 0 20px;
     text-align: center;
 }
 
 .empty-title {
-    margin: 0 0 8px;
+    max-width: 420px;
+    margin: 0 auto 8px;
     color: var(--ink);
     font-family: var(--font-display);
     font-size: 1.35rem;
@@ -365,7 +366,8 @@ a {
 }
 
 .empty-copy {
-    margin: 0;
+    max-width: 420px;
+    margin: 0 auto;
     color: var(--ink-soft);
     font-size: 0.9rem;
     line-height: 1.65;
@@ -710,14 +712,6 @@ a {
     line-height: 1.12;
     letter-spacing: -0.03em;
     text-wrap: balance;
-}
-
-.lede {
-    margin: 0;
-    color: var(--ink-soft);
-    font-size: 0.92rem;
-    line-height: 1.65;
-    text-wrap: pretty;
 }
 
 .hero-figure {

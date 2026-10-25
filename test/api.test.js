@@ -35,13 +35,28 @@ process.env.LLM7_RETRY_DELAY_MS = '10';
 process.env.LLM7_MAX_RETRIES = '1';
 
 const { createApp } = await import('../server/app.js');
-const { resetChatProvidersForTests } = await import('../server/services/chat.js');
+const {
+  resetChatProvidersForTests,
+  resetSuggestionsForTests,
+} = await import('../server/services/chat.js');
 
 const app = createApp();
 const originalFetch = globalThis.fetch;
 
 let calls = [];
 let providerHandler = null;
+
+const SUGGESTION_BATCH = [
+  'Why am I always tired?',
+  'How can I sleep better?',
+  'What helps with acne?',
+  'How do I recover after a run?',
+  'What should I eat before school?',
+  'How can I manage stress?',
+  'Why do I get headaches?',
+  'What belongs in a first-aid kit?',
+  'How can I stay hydrated?',
+];
 
 function jsonResponse(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
@@ -132,6 +147,7 @@ after(() => {
 
 beforeEach(() => {
   resetChatProvidersForTests();
+  resetSuggestionsForTests();
   calls = [];
   providerHandler = null;
 });
@@ -167,6 +183,70 @@ test('allowed origins are reflected while unknown origins are rejected', async (
     .expect(403);
   assert.equal(denied.body.error.code, 'ORIGIN_NOT_ALLOWED');
   assert.equal(denied.headers['access-control-allow-origin'], undefined);
+  assert.equal(calls.length, 0);
+});
+
+test('suggestions are AI-generated, validated, and cached', async () => {
+  await withProviderHandler(
+    () => completion(JSON.stringify(SUGGESTION_BATCH)),
+    async () => {
+      const res = await request(app).get('/api/suggestions').expect(200);
+
+      assert.deepEqual(Object.keys(res.body), ['suggestions']);
+      assert.equal(res.body.suggestions.length, 3);
+      for (const question of res.body.suggestions) {
+        assert.equal(typeof question, 'string');
+        assert.match(question, /\?$/);
+        assert.ok(question.length <= 90);
+      }
+
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0].provider, 'ovh');
+      assert.equal(calls[0].url, 'https://ovh.test/v1/chat/completions');
+      assert.equal(headerValue(calls[0].options, 'authorization'), undefined);
+      assert.equal(calls[0].body.max_tokens, 500);
+      assert.equal(calls[0].body.temperature, 0.9);
+      assert.match(calls[0].body.messages[0].content, /JSON array/);
+
+      const cached = await request(app).get('/api/suggestions').expect(200);
+      assert.equal(cached.body.suggestions.length, 3);
+      assert.equal(calls.length, 1);
+    },
+  );
+});
+
+test('suggestions fall back to LLM7 when OVH is rate limited', async () => {
+  await withProviderHandler(
+    (provider) =>
+      provider === 'ovh'
+        ? rateLimited()
+        : completion(JSON.stringify(SUGGESTION_BATCH)),
+    async () => {
+      const res = await request(app).get('/api/suggestions').expect(200);
+      assert.equal(res.body.suggestions.length, 3);
+      assert.equal(calls.at(-1).provider, 'llm7');
+    },
+  );
+});
+
+test('suggestions return an empty list when the model output is invalid', async () => {
+  await withProviderHandler(
+    () => completion('Not a list of questions.'),
+    async () => {
+      const res = await request(app).get('/api/suggestions').expect(200);
+      assert.deepEqual(res.body.suggestions, []);
+      assert.equal(calls.length, 2);
+    },
+  );
+});
+
+test('cross-site suggestions requests are rejected', async () => {
+  const res = await request(app)
+    .get('/api/suggestions')
+    .set('Sec-Fetch-Site', 'cross-site')
+    .expect(403);
+
+  assert.equal(res.body.error.code, 'CSRF_REJECTED');
   assert.equal(calls.length, 0);
 });
 
