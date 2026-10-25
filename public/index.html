@@ -6,7 +6,7 @@
     <meta name="description" content="Ask Dr.Health about your health and get one clear answer. Free to use, no sign-up.">
     <meta name="color-scheme" content="dark light">
     <meta name="theme-color" content="#0d1210">
-    <title>Dr.Health — Clear answers for your health</title>
+    <title>Dr.Health — Let's talk about your health</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" defer></script>
@@ -44,8 +44,7 @@
             <header class="chat-header">
                 <div class="chat-heading">
                     <p class="section-label">Ask Dr.Health</p>
-                    <h1>Clear answers for your health.</h1>
-                    <p class="chat-note">Ask anything. I'm here.</p>
+                    <h1>Let's talk about your health.</h1>
                 </div>
                 <div class="chat-actions">
                     <button
@@ -107,7 +106,7 @@
                         maxlength="4000"
                         autocomplete="off"
                         enterkeyhint="send"
-                        aria-describedby="composer-hint"
+                        aria-describedby="attach-hint composer-hint"
                     ></textarea>
                     <div class="composer-actions">
                         <input
@@ -131,24 +130,24 @@
                         </button>
                     </div>
                 </form>
+                <p id="attach-hint" class="attach-hint">
+                    Attach a text file: health notes, a symptom diary, or code.
+                </p>
                 <p id="composer-hint" class="composer-hint">
-                    Enter to send · Shift+Enter for a new line · Text files up to 24,000 characters
+                    Enter to send · Shift+Enter for a new line · Up to 24,000 characters
                 </p>
             </div>
         </section>
 
         <aside class="intro" aria-labelledby="about-title">
             <div class="intro-copy">
-                <p class="eyebrow">Why Dr.Health</p>
-                <h2 id="about-title">Let's talk about your health.</h2>
+                <h2 id="about-title" class="eyebrow">Why Dr.Health</h2>
                 <ul class="topic-list">
+                    <li>Ask anything. I'm here.</li>
                     <li>Friendly and easy for everyone.</li>
                     <li>It remembers your health story.</li>
                     <li>Short answers, explained as you go.</li>
                 </ul>
-                <p class="info-copy info-copy-files">
-                    Attach a text file: health notes, a symptom diary, or code.
-                </p>
             </div>
 
             <figure class="hero-figure" aria-hidden="true">
