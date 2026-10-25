@@ -16,6 +16,7 @@ import { globalLimiter } from './middleware/rateLimits.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
 import { chatRouter } from './routes/chat.js';
+import { suggestionsRouter } from './routes/suggestions.js';
 
 export function createApp() {
   const app = express();
@@ -51,6 +52,7 @@ export function createApp() {
 
   app.use('/api/chat', chatRouter);
   app.use('/api/health', healthRouter);
+  app.use('/api/suggestions', suggestionsRouter);
 
   app.use('/api', (req, res, next) => next(notFound('API endpoint not found.')));
 
