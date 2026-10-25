@@ -104,6 +104,9 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.match(html, /Attach a text file: health notes, a symptom diary, or code\./);
   assert.match(html, /Chats stay private in this browser\. Files are not saved\./);
   assert.match(html, /What do you want to ask\?/);
+  assert.ok(!html.includes('How it helps'));
+  assert.ok(!html.includes('info-card'));
+  assert.ok(!html.includes('<p class="section-label">Files</p>'));
   assert.ok(!html.includes('Plain words, not medical terms.'));
   assert.ok(!html.includes('Follow-ups remember what you said.'));
   assert.ok(!html.includes('Tells you when it is not sure.'));
