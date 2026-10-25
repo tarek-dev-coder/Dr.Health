@@ -22,6 +22,12 @@ for (const key of [
   }
 }
 
+if (!rawEnv.GUEST_SESSION_SECRET) {
+  throw new Error(
+    'GUEST_SESSION_SECRET is required. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64url\'))"',
+  );
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
