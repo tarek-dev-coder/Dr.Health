@@ -69,7 +69,8 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('in memory'));
   assert.ok(!html.includes('nutrition'));
   assert.ok(!html.includes('wellness'));
-  assert.match(html, /Health made clear\./);
+  assert.match(html, /Clear answers for your health\./);
+  assert.ok(!html.includes('Health made clear'));
   assert.ok(!html.includes('Health, made clear'));
   assert.ok(!html.includes('Your health, explained simply'));
   assert.match(html, /What do you want to ask\?/);
