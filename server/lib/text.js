@@ -11,8 +11,3 @@ export function sanitizeText(value) {
     .replace(/[\u202a-\u202e\u2066-\u2069]/g, '')
     .trim();
 }
-
-export function truncate(value, maxLength) {
-  if (typeof value !== 'string') return '';
-  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
-}

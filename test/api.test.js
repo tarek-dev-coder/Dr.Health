@@ -93,6 +93,16 @@ async function withFetch(handler, fn) {
   }
 }
 
+async function withSilencedConsole(fn) {
+  const previous = console.error;
+  console.error = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = previous;
+  }
+}
+
 test('health endpoint returns security headers and hides implementation details', async () => {
   const res = await request(app).get('/api/health').expect(200);
 
@@ -292,17 +302,19 @@ test('guest provider outages return a generic error without leaking details', as
   const agent = request.agent(app);
   await agent.post('/api/guest/session').expect(200);
 
-  await withFetch(
-    async () => jsonResponse({ error: { message: 'upstream detail' } }, 500),
-    async () => {
-      const res = await agent
-        .post('/api/guest/chat')
-        .send({ message: 'hello' })
-        .expect(503);
-      assert.equal(res.body.error.code, 'GUEST_UNAVAILABLE');
-      assert.ok(!JSON.stringify(res.body).includes('upstream detail'));
-      assert.ok(!JSON.stringify(res.body).includes('guest.test'));
-    },
+  await withSilencedConsole(() =>
+    withFetch(
+      async () => jsonResponse({ error: { message: 'upstream detail' } }, 500),
+      async () => {
+        const res = await agent
+          .post('/api/guest/chat')
+          .send({ message: 'hello' })
+          .expect(503);
+        assert.equal(res.body.error.code, 'GUEST_UNAVAILABLE');
+        assert.ok(!JSON.stringify(res.body).includes('upstream detail'));
+        assert.ok(!JSON.stringify(res.body).includes('guest.test'));
+      },
+    ),
   );
 });
 

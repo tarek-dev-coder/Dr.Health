@@ -38,7 +38,7 @@ const envSchema = z.object({
     .min(32, 'GUEST_SESSION_SECRET must be at least 32 characters'),
 
   // The server calls one OpenAI-compatible endpoint. The default is keyless;
-  // an optional server-side token can be used for providers such as LLM7.
+  // an optional server-side token can be used for providers that require one.
   GUEST_API_URL: z
     .string()
     .trim()
@@ -142,9 +142,7 @@ if (isProduction && enforceHttps && allowedHosts.length === 0) {
 export const config = Object.freeze({
   nodeEnv: env.NODE_ENV,
   isProduction,
-  isTest: env.NODE_ENV === 'test',
   port: env.PORT,
-  rootDir,
   publicDir: path.join(rootDir, 'public'),
 
   guestSessionSecret: env.GUEST_SESSION_SECRET,
@@ -173,6 +171,4 @@ export const config = Object.freeze({
 
   globalRateLimit: env.GLOBAL_RATE_LIMIT,
   globalRateWindowMs: env.GLOBAL_RATE_WINDOW_MINUTES * 60 * 1000,
-
-  logLevel: env.LOG_LEVEL,
 });

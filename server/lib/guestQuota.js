@@ -26,23 +26,22 @@ function countFor(map, key) {
   return map.get(key) || 0;
 }
 
-export function getGuestQuota(guestId, ip) {
-  resetIfNeeded();
-  const guestUsed = countFor(guestCounts, guestId);
-  const ipUsed = countFor(ipCounts, ip);
-  const remaining = Math.max(
+function remainingFor(guestId, ip) {
+  return Math.max(
     0,
     Math.min(
-      config.guestDailyLimit - guestUsed,
-      config.guestIpDailyLimit - ipUsed,
+      config.guestDailyLimit - countFor(guestCounts, guestId),
+      config.guestIpDailyLimit - countFor(ipCounts, ip),
       config.guestGlobalDailyLimit - globalCount,
     ),
   );
+}
 
+export function getGuestQuota(guestId, ip) {
+  resetIfNeeded();
   return {
-    remaining,
+    remaining: remainingFor(guestId, ip),
     limit: config.guestDailyLimit,
-    retryAfterSeconds: retryAfterSeconds(),
   };
 }
 
@@ -55,34 +54,22 @@ export function getGuestQuota(guestId, ip) {
 export function consumeGuestQuota(guestId, ip) {
   resetIfNeeded();
 
-  if (globalCount >= config.guestGlobalDailyLimit) {
-    return { allowed: false, reason: 'global', retryAfterSeconds: retryAfterSeconds() };
-  }
-  if (countFor(guestCounts, guestId) >= config.guestDailyLimit) {
-    return { allowed: false, reason: 'guest', retryAfterSeconds: retryAfterSeconds() };
-  }
-  if (countFor(ipCounts, ip) >= config.guestIpDailyLimit) {
-    return { allowed: false, reason: 'ip', retryAfterSeconds: retryAfterSeconds() };
+  if (
+    globalCount >= config.guestGlobalDailyLimit ||
+    countFor(guestCounts, guestId) >= config.guestDailyLimit ||
+    countFor(ipCounts, ip) >= config.guestIpDailyLimit
+  ) {
+    return { allowed: false, retryAfterSeconds: retryAfterSeconds() };
   }
 
-  const nextGuestCount = countFor(guestCounts, guestId) + 1;
-  const nextIpCount = countFor(ipCounts, ip) + 1;
-  guestCounts.set(guestId, nextGuestCount);
-  ipCounts.set(ip, nextIpCount);
+  guestCounts.set(guestId, countFor(guestCounts, guestId) + 1);
+  ipCounts.set(ip, countFor(ipCounts, ip) + 1);
   globalCount += 1;
 
   return {
     allowed: true,
-    remaining: Math.max(
-      0,
-      Math.min(
-        config.guestDailyLimit - nextGuestCount,
-        config.guestIpDailyLimit - nextIpCount,
-        config.guestGlobalDailyLimit - globalCount,
-      ),
-    ),
+    remaining: remainingFor(guestId, ip),
     limit: config.guestDailyLimit,
-    retryAfterSeconds: retryAfterSeconds(),
   };
 }
 
