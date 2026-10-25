@@ -1,19 +1,19 @@
 # Dr.Health
 
-Dr.Health is a free health-information assistant with a dark-first, hand-built
-interface. Ask a question or attach a text/code file and get a concise answer.
+Dr.Health is a free health assistant with a dark-first, hand-built interface.
+Ask a question or attach a text/code file and get a clear, evidence-led answer.
 There is no account, no sign-in, no database, and no daily message quota.
 
-> **Important:** Dr.Health is an information tool, not a doctor. It does not
-> diagnose or prescribe. In an emergency, contact your local emergency number.
+> **Important:** Dr.Health gives you context, not a diagnosis. In an emergency,
+> contact your local emergency number.
 
 ## How it works
 
 1. The browser sends a text question and, optionally, one text/code file to the
    server as `multipart/form-data`.
 2. The server chooses a provider:
-   - **OVHcloud AI Endpoints** (`Meta-Llama-3_3-70B-Instruct`) for general
-     health questions.
+   - **OVHcloud AI Endpoints** (`Meta-Llama-3_3-70B-Instruct`) for health
+     questions.
    - **LLM7.io** (`codestral-latest`) for source-code files and code-style
      questions.
 3. If the first provider returns `429`, times out, or is unavailable, the server
@@ -173,8 +173,8 @@ sent to the provider as untrusted text, and never written to disk.
   identifying information or protected health information.
 - The server does not store chat history, prompts, replies, or files. Provider
   cooldowns and rate limits are in process memory.
-- Dr.Health is not a doctor, does not diagnose, and does not replace
-  professional care.
+- Dr.Health gives context, not a diagnosis, and does not replace professional
+  care.
 - If you describe a possible emergency, the assistant is instructed to direct
   you to local emergency services.
 

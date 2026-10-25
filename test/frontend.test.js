@@ -60,6 +60,14 @@ test('the UI has no sign-in surface and supports text/code attachments', () => {
   assert.ok(!html.includes('provider may use'));
 });
 
+test('public copy is confident and avoids generic disclaimers', () => {
+  assert.ok(!html.includes('General health information'));
+  assert.ok(!html.includes('General information only'));
+  assert.ok(!html.includes('does not diagnose or prescribe'));
+  assert.match(html, /Health, made clear\./);
+  assert.match(html, /context, not a diagnosis/);
+});
+
 test('HTML uses external scripts/styles and no inline handlers', () => {
   assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html));
   assert.ok(!/<style[\s>]/i.test(html));
