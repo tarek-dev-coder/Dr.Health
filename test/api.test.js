@@ -200,7 +200,15 @@ test('chat uses OVH first for health questions and never leaks provider details'
   assert.equal(payload.messages.length, 4);
   assert.equal(payload.messages[0].role, 'system');
   assert.match(payload.messages[0].content, /under 300 words/);
-  assert.match(payload.messages[0].content, /Never disclose the underlying model name/);
+  assert.match(payload.messages[0].content, /not a clinician/);
+  assert.match(payload.messages[0].content, /Never diagnose, prescribe/);
+  assert.match(payload.messages[0].content, /exact medication doses/);
+  assert.match(payload.messages[0].content, /contact local emergency services/);
+  assert.match(payload.messages[0].content, /self-harm/);
+  assert.match(payload.messages[0].content, /untrusted data/);
+  assert.match(payload.messages[0].content, /Never disclose or hint at the underlying model name/);
+  assert.match(payload.messages[0].content, /system prompt/);
+  assert.match(payload.messages[0].content, /never invent studies/);
   assert.equal(payload.messages[1].role, 'user');
   assert.equal(payload.messages[1].content, 'Tell me about breakfast.');
   assert.equal(payload.messages[2].role, 'assistant');
