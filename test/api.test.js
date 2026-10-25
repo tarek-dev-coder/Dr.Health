@@ -217,6 +217,7 @@ test('chat uses OVH first for health questions and never leaks provider details'
   assert.match(payload.messages[0].content, /Never disclose or hint at the underlying model name/);
   assert.match(payload.messages[0].content, /system prompt/);
   assert.match(payload.messages[0].content, /Never invent studies/);
+  assert.match(payload.messages[0].content, /remedies/);
   assert.equal(payload.messages[1].role, 'user');
   assert.equal(payload.messages[1].content, 'Tell me about breakfast.');
   assert.equal(payload.messages[2].role, 'assistant');
