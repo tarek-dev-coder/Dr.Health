@@ -1,9 +1,11 @@
 # Security Policy and Hardening Notes
 
 Dr.Health is a free health-information app with text/code attachments. There are
-no accounts, no sign-in, no database, no cookies, and no user records. The
-security baseline focuses on keeping provider credentials server-side, bounding
-free usage, validating text and files, and rendering model output safely.
+no accounts, no sign-in, no database, no cookies, and no user records. Chat
+history can be saved in the browser's `localStorage`; attached file text is not
+saved. The security baseline focuses on keeping provider credentials
+server-side, bounding free usage, validating text and files, and rendering model
+output safely.
 
 ## Reporting a vulnerability
 
@@ -22,7 +24,7 @@ and rotate any secrets that were ever exposed.
 
 ```
 Browser (public/)
-   │  same-origin multipart fetch; no chat cookies; theme preference only
+   │  same-origin multipart fetch; no chat cookies; theme + local history
    ▼
 Node/Express (server/)
    ├─ text and file validation / size bounds
@@ -45,7 +47,7 @@ and no user records.
 | -------------- | ------ | -------------- |
 | Enable TLS/HTTPS | Done | HSTS in production, HTTPS redirect, deployment guidance |
 | Tighten CORS | Done | Same-origin by default, exact allowlist, unknown origins rejected server-side, no wildcard |
-| Keep tokens out of local storage | Done | No chat data in web storage; provider tokens stay server-side; only the theme preference is stored |
+| Keep tokens out of local storage | Done | Provider tokens and file contents never enter web storage; only the theme preference and optional chat text are stored locally |
 | Hide env from git | Done | `.gitignore`, `.env.example`, no secrets in tracked files |
 | Validate form inputs | Done | Zod schemas, length limits, control-character stripping, strict JSON, bounded history |
 | Validate attachments | Done | One file, 256 KB / 24,000-char caps, UTF-8 validation, blocked binary and secret-file types |
@@ -77,9 +79,12 @@ is not a secret either.
 ### 2. Stateless design
 
 - There is no session cookie, account, email address, or profile.
-- Chat history is held in the browser tab's memory and sent back with each
-  request. The server does not store it.
-- Attached files are held in memory for the duration of the request only.
+- Chat history is held in browser memory and optionally saved to
+  `localStorage`; recent turns are sent back with each request. The server does
+  not store them.
+- Saved chats contain message text and the attached file name only. File
+  contents are held in memory for the duration of the request and are not
+  persisted.
 - Provider cooldowns and rate-limit counters are in process memory and reset on
   restart.
 
@@ -147,8 +152,11 @@ Additional controls:
   `Referrer-Policy: no-referrer`, COOP/CORP, and a restrictive
   `Permissions-Policy` are set.
 - Express JSON responses escape HTML-sensitive characters (`json escape`).
-- The frontend keeps chat history in memory only, which reduces exposure on
-  shared devices.
+- The frontend keeps chat history in memory and, when the user sends a message,
+  in `localStorage`. Model output is inserted with `textContent`, never as
+  HTML, and the app has no third-party scripts.
+- Saved chats are visible to anyone who can use the same browser profile. The
+  History panel has per-chat delete and a two-step "Clear all" control.
 
 ### 7. Logging
 
@@ -197,6 +205,10 @@ other is tried before returning a generic busy error.
   This app is not HIPAA/GDPR-compliant out of the box and must not be used for
   protected health information without appropriate agreements, retention
   controls, and legal review.
+- **Browser-local history:** saved chats are stored unencrypted in
+  `localStorage`. Anyone with access to the browser profile can read them, and
+  clearing browser data removes them. On shared devices, use "Clear all" after
+  a conversation. Attached file text is not saved.
 - **Provider availability:** both default endpoints are free public endpoints
   with no SLA and no guaranteed model quality. OVH is intentionally slow and
   limited to 2 RPM per IP, and its public quota may return `403` when exhausted.

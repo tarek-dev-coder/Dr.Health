@@ -2,7 +2,7 @@
   "name": "dr-health",
   "version": "2.1.0",
   "private": true,
-  "description": "Dr.Health - clear, evidence-led health answers with two-provider fallback and text/code attachments",
+  "description": "Dr.Health - clear health answers with two-provider fallback, text/code attachments, and browser-local chat history",
   "type": "module",
   "engines": {
     "node": ">=20.19.0"

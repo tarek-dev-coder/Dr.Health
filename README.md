@@ -1,8 +1,9 @@
 # Dr.Health
 
 Dr.Health is a free health assistant with a dark-first, hand-built interface.
-Ask a question or attach a text/code file and get a clear, evidence-led answer.
-There is no account, no sign-in, no database, and no daily message quota.
+Ask a question or attach a text file and get a clear answer. There is no account,
+no sign-in, no database, and no daily message quota. Chats can be saved in your
+browser.
 
 > **Important:** Dr.Health gives you context, not a diagnosis. In an emergency,
 > contact your local emergency number.
@@ -21,11 +22,12 @@ There is no account, no sign-in, no database, and no daily message quota.
    `429`; LLM7 is retried twice with a short backoff.
 4. Provider names, model ids, tokens, and error bodies stay on the server. The
    browser only receives the reply text.
-5. Chat history is kept in the browser tab's memory only. The server does not
-   store questions, replies, or files.
+5. Chat history is kept in browser memory and can be saved to the browser's
+   `localStorage`. The server does not store questions, replies, or files.
 
-The app is stateless. There is no cookie, session, user record, or database.
-Per-IP rate limits and in-process provider cooldowns are the only state.
+The server is stateless. There is no cookie, session, user record, or database.
+Per-IP rate limits and in-process provider cooldowns are the only server state.
+Saved chats stay in the browser until the user clears them.
 
 ## Requirements
 
@@ -178,6 +180,10 @@ sent to the provider as untrusted text, and never written to disk.
   identifying information or protected health information.
 - The server does not store chat history, prompts, replies, or files. Provider
   cooldowns and rate limits are in process memory.
+- Chat history can be saved in the browser's `localStorage`. It stays on that
+  browser until the user clears it, and anyone with access to the browser
+  profile can read it. Attached file text is not saved; only the file name
+  appears in the saved chat.
 - Dr.Health gives context, not a diagnosis, and does not replace professional
   care.
 - If you describe a possible emergency, the assistant is instructed to direct
@@ -193,7 +199,8 @@ npm run audit
 The tests cover security headers, origin and CSRF enforcement, provider
 selection, fallback on `429` and timeout, text/code attachments, binary file
 rejection, input bounds, concurrency, generic provider errors, removed routes,
-frontend secret/storage checks, and static asset caching.
+frontend secret/storage checks, browser-local history checks, and static asset
+caching.
 
 ## Deployment
 
