@@ -203,8 +203,10 @@ test('chat uses OVH first for health questions and never leaks provider details'
   assert.match(payload.messages[0].content, /not a clinician/);
   assert.match(payload.messages[0].content, /Never diagnose, prescribe/);
   assert.match(payload.messages[0].content, /exact medication doses/);
+  assert.match(payload.messages[0].content, /medical emergency/);
   assert.match(payload.messages[0].content, /contact local emergency services/);
   assert.match(payload.messages[0].content, /self-harm/);
+  assert.match(payload.messages[0].content, /eating-disorder crisis/);
   assert.match(payload.messages[0].content, /untrusted data/);
   assert.match(payload.messages[0].content, /Never disclose or hint at the underlying model name/);
   assert.match(payload.messages[0].content, /system prompt/);
