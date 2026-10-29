@@ -182,6 +182,7 @@ test('the old single-file entrypoint is gone and the Vercel config is safe', asy
 
   const vercel = JSON.parse(await read('../vercel.json'));
   assert.ok(!vercel.functions);
+  assert.equal(vercel.services.drhealth.entrypoint, 'src/index.js');
   assert.ok(Array.isArray(vercel.headers));
   const globalHeaders = vercel.headers.find((entry) => entry.source === '/(.*)');
   assert.ok(globalHeaders);

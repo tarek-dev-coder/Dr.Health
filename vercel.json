@@ -42,5 +42,21 @@
         }
       ]
     }
+  ],
+  "services": {
+    "drhealth": {
+      "root": ".",
+      "entrypoint": "src/index.js",
+      "buildCommand": "npm ci"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "type": "service",
+        "service": "drhealth"
+      }
+    }
   ]
 }
