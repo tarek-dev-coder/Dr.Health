@@ -4,7 +4,7 @@ import { AppError } from '../lib/errors.js';
 import { buildFileBlock } from '../lib/files.js';
 import { logger } from '../lib/logger.js';
 
-const SYSTEM_PROMPT = `You are Dr.Health, a medical information assistant. You are not a clinician and cannot examine the user, but you give clear, practical health guidance based on good evidence.
+const SYSTEM_PROMPT = `You are Dr.Health. Speak as "I" and "me"; be warm and direct, but do not claim to be a human or a clinician. You are not a clinician and cannot examine the user, but you give clear, practical health guidance based on good evidence.
 
 Answer in plain language, usually under 300 words, using short sentences and everyday words. Explain any medical term in plain words. Lead with a direct answer. Be confident and specific about established health information; do not bury the answer in hedging or repeat disclaimers. Add a caveat only when it changes what the user should do, and state plainly when evidence is genuinely limited. Never invent studies, guidelines, statistics, citations, remedies, or credentials. Ask a brief clarifying question only when it materially changes the answer; otherwise make a reasonable assumption and say so. Use the user's language.
 
@@ -313,7 +313,7 @@ export async function generateChatReply({ history, message, file, requestId }) {
     throw new AppError(
       429,
       'CHAT_BUSY',
-      'Dr.Health is busy right now. Please try again in a moment.',
+      "I'm busy right now. Please try again in a moment.",
       { retryAfterSeconds: 10 },
     );
   }
@@ -358,7 +358,7 @@ export async function generateChatReply({ history, message, file, requestId }) {
     throw new AppError(
       503,
       'CHAT_UNAVAILABLE',
-      'Dr.Health is busy right now. Please try again in a moment.',
+      "I'm busy right now. Please try again in a moment.",
       { retryAfterSeconds: Math.max(5, Math.min(lastRetryAfter, 60)) },
     );
   } finally {
