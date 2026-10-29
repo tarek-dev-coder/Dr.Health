@@ -38,7 +38,7 @@
 <br>
 
 ## My Lifecycle
-<img src="https://www.codedex.io/images/codedex-bot-logo-compressed.gif" width="250" height="250" align="right"/>
+<img src="https://media.tenor.com/i3juHoK6Q6MAAAAj/health-doctor.gif" width="250" height="250" align="right"/>
 
 ```javascript
 function main() {
