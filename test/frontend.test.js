@@ -90,8 +90,10 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('in memory'));
   assert.ok(!html.includes('nutrition'));
   assert.ok(!html.includes('wellness'));
-  assert.match(html, /<title>Dr\.Health — Let's talk about your health<\/title>/);
-  assert.match(html, /<h1>Let's talk about your health\.<\/h1>/);
+  assert.match(html, /<title>Dr\.Health — Health advice is everywhere\. I'll give you one clear answer\.<\/title>/);
+  assert.match(html, /<h1>Health advice is everywhere\. I'll give you one clear answer\.<\/h1>/);
+  assert.ok(!html.includes("Let's talk about your health."));
+  assert.ok(!html.includes('class="empty-copy"'));
   assert.ok(!html.includes('Clear answers for your health'));
   assert.ok(!html.includes('Health made clear'));
   assert.ok(!html.includes('Health, made clear'));
@@ -179,7 +181,8 @@ test('the old single-file entrypoint is gone and the Vercel config is safe', asy
   await assert.rejects(() => access(new URL('../index.js', import.meta.url)));
 
   const vercel = JSON.parse(await read('../vercel.json'));
-  assert.equal(vercel.functions['src/index.js'].maxDuration, 60);
+  assert.ok(!vercel.functions);
+  assert.equal(vercel.services.drhealth.entrypoint, 'src/index.js');
   assert.ok(Array.isArray(vercel.headers));
   const globalHeaders = vercel.headers.find((entry) => entry.source === '/(.*)');
   assert.ok(globalHeaders);

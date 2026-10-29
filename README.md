@@ -232,8 +232,8 @@ runs `src/index.js` as an Express function.
    ```
 
    Use `CHAT_TIMEOUT_MS=55000`, `OVH_TIMEOUT_MS=30000`, and
-   `LLM7_TIMEOUT_MS=15000` so a request finishes inside Vercel's 60-second
-   function limit. If you leave `ALLOWED_HOSTS` empty, set
+   `LLM7_TIMEOUT_MS=15000` so a request finishes inside Vercel's function
+   time limit. If you leave `ALLOWED_HOSTS` empty, set
    `ENFORCE_HTTPS=false` instead. Vercel still serves the site over HTTPS.
 
    The provider defaults are keyless. Add `OVH_API_KEY` or `LLM7_API_KEY` only if

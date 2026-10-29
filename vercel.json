@@ -1,10 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "src/index.js": {
-      "maxDuration": 60
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
@@ -46,6 +41,22 @@
           "value": "default-src 'self'; base-uri 'none'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; img-src 'self' data:; media-src 'none'; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'none'; upgrade-insecure-requests"
         }
       ]
+    }
+  ],
+  "services": {
+    "drhealth": {
+      "root": ".",
+      "entrypoint": "src/index.js",
+      "buildCommand": "npm ci"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "type": "service",
+        "service": "drhealth"
+      }
     }
   ]
 }
