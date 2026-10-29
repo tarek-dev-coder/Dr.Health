@@ -66,13 +66,6 @@ ask() → validate() → respond() → clear()
 
 ---
 
-## Let's Talk
-
-[![Contact](https://img.shields.io/badge/Contact-tarek%40dev-coder-00C853?style=for-the-badge&logo=github)](https://github.com/tarek-dev-coder)
-[![Source](https://img.shields.io/badge/Source-Private-grey?style=for-the-badge)](https://github.com/tarek-dev-coder/drhealth-source)
-
----
-
 ## Credits
 
 Built by [tarek-dev-coder](https://github.com/tarek-dev-coder). Source stays private (`drhealth-source`).
