@@ -66,6 +66,20 @@ ask() → validate() → respond() → clear()
 
 ---
 
+## Stats
+
+<div align="center">
+
+<h3>GitHub Activity</h3>
+<img src="https://encept-github-status.vercel.app/api?username=tarek-dev-coder&show_icons=true&theme=dark&hide_border=true" alt="GitHub Stats" />
+
+<h3>Coding Time</h3>
+<img src="https://wakatime.com/badge/user/018d361c-db8c-49ff-b17e-4b367310d84d.svg" alt="WakaTime" />
+
+</div>
+
+---
+
 ## Credits
 
 Built by [tarek-dev-coder](https://github.com/tarek-dev-coder). Source stays private (`drhealth-source`).
