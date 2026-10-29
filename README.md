@@ -85,5 +85,3 @@ function main() {
 <a href="https://github.com/piyushsuthar/github-readme-quotes">
     <img alt="Quotes" src="https://github-readme-quotes-bay.vercel.app/quote?theme=dark&layout=socrates&quotesUrl=https://gist.githubusercontent.com/tarek-dev-coder/6d5f86a4c74b0b767fa4e93a9e4447b4/raw">
 </a>
-
-[![committers.top badge](https://user-badge.committers.top/algeria_private/tarek-dev-coder.svg)](https://user-badge.committers.top/algeria_private/tarek-dev-coder)
