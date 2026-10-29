@@ -531,15 +531,6 @@ a {
     letter-spacing: -0.02em;
 }
 
-.empty-copy {
-    max-width: 420px;
-    margin: 0 auto;
-    color: var(--ink-soft);
-    font-size: 0.9rem;
-    line-height: 1.65;
-    text-wrap: pretty;
-}
-
 .prompt-chips {
     display: flex;
     flex-wrap: wrap;

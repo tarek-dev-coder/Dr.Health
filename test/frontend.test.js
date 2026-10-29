@@ -90,8 +90,10 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('in memory'));
   assert.ok(!html.includes('nutrition'));
   assert.ok(!html.includes('wellness'));
-  assert.match(html, /<title>Dr\.Health — Let's talk about your health<\/title>/);
-  assert.match(html, /<h1>Let's talk about your health\.<\/h1>/);
+  assert.match(html, /<title>Dr\.Health — Health advice is everywhere\. I'll give you one clear answer\.<\/title>/);
+  assert.match(html, /<h1>Health advice is everywhere\. I'll give you one clear answer\.<\/h1>/);
+  assert.ok(!html.includes("Let's talk about your health."));
+  assert.ok(!html.includes('class="empty-copy"'));
   assert.ok(!html.includes('Clear answers for your health'));
   assert.ok(!html.includes('Health made clear'));
   assert.ok(!html.includes('Health, made clear'));
