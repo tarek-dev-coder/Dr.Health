@@ -109,11 +109,9 @@ Project maintained by [tarek-dev-coder](https://github.com/tarek-dev-coder). Que
 
 ---
 
-## Acknowledgments
+## Credits
 
-- [Best-README-Template](https://github.com/othneildrew/Best-README-Template) — structure and formatting inspiration
-- [Img Shields](https://shields.io) — badges and status indicators
-- [GitHub Pages](https://pages.github.com) — documentation hosting reference
+Built and maintained by [tarek-dev-coder](https://github.com/tarek-dev-coder).
 
 ---
 
