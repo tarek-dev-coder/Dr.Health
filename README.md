@@ -66,17 +66,10 @@ ask() → validate() → respond() → clear()
 
 ---
 
-## Stats
+## Let's Talk
 
-<div align="center">
-
-<h3>GitHub Activity</h3>
-<img src="https://encept-github-status.vercel.app/api?username=tarek-dev-coder&show_icons=true&theme=dark&hide_border=true" alt="GitHub Stats" />
-
-<h3>Coding Time</h3>
-<img src="https://wakatime.com/badge/user/018d361c-db8c-49ff-b17e-4b367310d84d.svg" alt="WakaTime" />
-
-</div>
+[![Contact](https://img.shields.io/badge/Contact-tarek%40dev-coder-00C853?style=for-the-badge&logo=github)](https://github.com/tarek-dev-coder)
+[![Source](https://img.shields.io/badge/Source-Private-grey?style=for-the-badge)](https://github.com/tarek-dev-coder/drhealth-source)
 
 ---
 
