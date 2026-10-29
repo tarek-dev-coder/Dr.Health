@@ -53,6 +53,19 @@ Dr.Health is built as a dark-first assistant. Questions are processed with conte
 
 ---
 
+## Process
+
+```text
+ask() → validate() → respond() → clear()
+```
+
+- Input: health question or file
+- Check: text or file validation
+- Reply: direct, brief answer
+- Clear: no server storage; browser clears anytime
+
+---
+
 ## Credits
 
 Built by [tarek-dev-coder](https://github.com/tarek-dev-coder). Source stays private (`drhealth-source`).
