@@ -59,5 +59,7 @@ function main() {
 
 <br>
 
-### ✨ Medical Quote:
-![Quote](https://readme-daily-quotes.vercel.app/api?category=medical&theme=github_dark)
+### ✨ Daily Wisdom:
+<a href="https://github.com/piyushsuthar/github-readme-quotes">
+    <img alt="Quotes" src="https://quotes-github-readme.vercel.app/api?type=horizontal&theme=dark&animation=grow_out_in&quoteCategory=life&border=true">
+</a>
