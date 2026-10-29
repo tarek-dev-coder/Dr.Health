@@ -52,14 +52,13 @@ function main() {
 }
 ```
 
-<br>
+<br><br><br>
 
 ### 📩 Let's Talk:
-<a href="https://drhealth-green.vercel.app" target="_blank"><img src="https://img.shields.io/badge/-Try%20Dr.Health-00C853?style=for-the-badge&logo=Vercel" /></a>
+<a href="https://drhealth-green.vercel.app" target="_blank"><img src="https://img.shields.io/badge/-Try%20Dr.Health-00C853?style=for-the-badge&logo=Vercel" /></a> &nbsp;
 <a href="https://github.com/tarek-dev-coder" target="_blank"><img src="https://img.shields.io/badge/-tarek--dev--coder-181717?style=for-the-badge&logo=Github" /></a>
-<a href="mailto:tarek@example.com" target="_blank"><img src="https://img.shields.io/badge/-tarek@example.com-0077B5?style=for-the-badge&logo=Gmail" /></a>
 
-<br>
+<br><br>
 
 ### ✨ Medical Quote:
 <a href="https://github.com/piyushsuthar/github-readme-quotes">
