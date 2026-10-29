@@ -109,7 +109,7 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.match(html, /<p id="attach-hint" class="attach-hint">\s*Attach a text file: health notes, a symptom diary, or code\. I'll read it\.\s*<\/p>/);
   assert.ok(html.indexOf('id="attach-hint"') > html.indexOf('id="chat-form"'));
   assert.match(html, /I keep chats private in this browser\. I don't save files\./);
-  assert.match(html, /What do you want to ask me\?/);
+  assert.match(html, /Health advice is everywhere\. I'll give you one clear answer\./);
   assert.ok(!html.includes('How it helps'));
   assert.ok(!html.includes('info-card'));
   assert.ok(!html.includes('info-copy'));
