@@ -63,20 +63,6 @@ function main() {
 
 ## 🎖️ My Statistics:
 <h3>Repository Stats:</h3>
-<img src="https://img.shields.io/github/stars/tarek-dev-coder/Dr.Health?style=for-the-badge&color=00C853" />
-<img src="https://img.shields.io/github/forks/tarek-dev-coder/Dr.Health?style=for-the-badge&color=00C853" />
-
-<details>
-<summary>Show GitHub Stats</summary>
-<br>
-
-<a href="https://github.com/anuraghazra/github-readme-stats">
-  <img alt="tarek-dev-coder's Github Stats" src="https://github-readme-stats.shion.dev/api?username=tarek-dev-coder&show_icons=true&count_private=true&locale=en&theme=transparent&layout=compact" height="230px"/>
-</a>
-
-</details>
-
-<br>
 
 ### ✨ Medical Quote:
 <a href="https://github.com/piyushsuthar/github-readme-quotes">
