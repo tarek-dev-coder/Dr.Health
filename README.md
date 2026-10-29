@@ -7,6 +7,8 @@
 [![Live](https://img.shields.io/badge/Live-drhealth-green.vercel.app-00C853?style=for-the-badge&logo=vercel)](https://drhealth-green.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Source](https://img.shields.io/badge/Source-Private-grey?style=for-the-badge)](https://github.com/tarek-dev-coder/drhealth-source)
+[![Status](https://img.shields.io/badge/Status-Online-00C853?style=for-the-badge&logo=vercel)](https://drhealth-green.vercel.app)
+[![Quality](https://img.shields.io/badge/Quality-Docs%20Only-blue?style=for-the-badge&logo=github)](https://github.com/tarek-dev-coder/Dr.Health)
 
 </div>
 
