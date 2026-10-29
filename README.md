@@ -74,8 +74,8 @@ Built by [tarek-dev-coder](https://github.com/tarek-dev-coder). Source stays pri
 
 ## License
 
-Under [MIT License]() — see [LICENSE](LICENSE) for full terms.
+Under the [MIT License](LICENSE).
 
 <p align="center">
-  <strong>Dr.Health</strong> · Free · Dark · Direct · No account required
+  <strong>Dr.Health</strong> · Free · Unlimited · Friendly · No account required
 </p>
