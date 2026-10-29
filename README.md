@@ -61,9 +61,6 @@ function main() {
 
 <br>
 
-## 🎖️ My Statistics:
-<h3>Repository Stats:</h3>
-
 ### ✨ Medical Quote:
 <a href="https://github.com/piyushsuthar/github-readme-quotes">
     <img alt="Quotes" src="https://github-readme-quotes-bay.vercel.app/quote?theme=dark&layout=socrates&quotesUrl=https://gist.githubusercontent.com/tarek-dev-coder/6d5f86a4c74b0b767fa4e93a9e4447b4/raw" />
