@@ -492,7 +492,7 @@ function saveCurrentChat() {
     trimSavedChats();
     if (!persistChats() && !storageWarningShown) {
         storageWarningShown = true;
-        setError('This chat could not be saved in your browser.');
+        setError("I couldn't save this chat in your browser.");
     }
     renderHistoryList();
 }
@@ -644,7 +644,7 @@ async function sendMessage() {
     const text = textInput.value.trim();
 
     if (!text && !selectedFile) {
-        setError('Type a question or add a text file.');
+        setError('Type a question or add a text file for me.');
         textInput.focus();
         return;
     }
@@ -714,9 +714,9 @@ async function sendMessage() {
             });
         } catch {
             if (timedOut) {
-                throw new Error('This is taking too long. Please try again.');
+                throw new Error("I'm taking too long. Please try again.");
             }
-            throw new Error('Could not connect. Check your internet and try again.');
+            throw new Error("I couldn't connect. Check your internet and try again.");
         } finally {
             clearTimeout(timeoutId);
         }
@@ -728,14 +728,14 @@ async function sendMessage() {
             const serverMessage =
                 data && data.error && typeof data.error.message === 'string'
                     ? data.error.message
-                    : 'That did not work. Please try again.';
+                    : "That didn't work. Please try again.";
             const reference = requestId ? ` (ref: ${requestId})` : '';
             throw new Error(`${serverMessage}${reference}`);
         }
 
         const reply = data && typeof data.reply === 'string' ? data.reply.trim() : '';
         if (!reply) {
-            throw new Error('No answer came back. Please try again.');
+            throw new Error("I didn't send an answer back. Please try again.");
         }
 
         addMessage('assistant', reply);
@@ -749,7 +749,7 @@ async function sendMessage() {
         saveCurrentChat();
         clearFile();
     } catch (error) {
-        setError(error && error.message ? error.message : 'Something went wrong. Please try again.');
+        setError(error && error.message ? error.message : "Something went wrong on my end. Please try again.");
     } finally {
         setBusy(false);
         textInput.focus();

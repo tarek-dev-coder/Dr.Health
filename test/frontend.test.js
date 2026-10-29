@@ -64,7 +64,7 @@ test('the UI has no sign-in surface and supports text/code attachments', () => {
   assert.match(html, /id="historyList"/);
   assert.match(html, /id="clearHistoryButton"/);
   assert.match(html, /No saved chats yet\./);
-  assert.match(html, /Chats stay private in this browser\. Files are not saved\./);
+  assert.match(html, /I keep chats private in this browser\. I don't save files\./);
   assert.ok(!html.includes('Emergency? Call your local emergency number first.'));
   assert.ok(!html.includes('Messages are processed by an AI provider'));
   assert.ok(!html.includes('provider may use'));
@@ -97,17 +97,17 @@ test('public copy is confident and avoids generic disclaimers', () => {
   assert.ok(!html.includes('Health, made clear'));
   assert.ok(!html.includes('Your health, explained simply'));
   assert.match(html, /<h2 id="about-title" class="eyebrow">Why Dr\.Health<\/h2>/);
-  assert.match(html, /<ul class="topic-list">\s*<li>Ask anything\. I'm here\.<\/li>/);
+  assert.match(html, /<ul class="topic-list">\s*<li>Ask anything\. I'm always here\.<\/li>/);
   assert.ok(!html.includes('class="chat-note"'));
-  assert.match(html, /Health advice is everywhere\. Get one clear answer\./);
-  assert.match(html, /Free to use\. Just ask\./);
-  assert.match(html, /Friendly and easy for everyone\./);
-  assert.match(html, /It remembers your health story\./);
-  assert.match(html, /Short answers, explained as you go\./);
-  assert.match(html, /<p id="attach-hint" class="attach-hint">\s*Attach a text file: health notes, a symptom diary, or code\.\s*<\/p>/);
+  assert.match(html, /Health advice is everywhere\. I'll give you one clear answer\./);
+  assert.match(html, /Free to use\. Just ask me\./);
+  assert.match(html, /I'm friendly and easy to talk to\./);
+  assert.match(html, /I remember your health story\./);
+  assert.match(html, /I keep answers short and explain them as we go\./);
+  assert.match(html, /<p id="attach-hint" class="attach-hint">\s*Attach a text file: health notes, a symptom diary, or code\. I'll read it\.\s*<\/p>/);
   assert.ok(html.indexOf('id="attach-hint"') > html.indexOf('id="chat-form"'));
-  assert.match(html, /Chats stay private in this browser\. Files are not saved\./);
-  assert.match(html, /What do you want to ask\?/);
+  assert.match(html, /I keep chats private in this browser\. I don't save files\./);
+  assert.match(html, /What do you want to ask me\?/);
   assert.ok(!html.includes('How it helps'));
   assert.ok(!html.includes('info-card'));
   assert.ok(!html.includes('info-copy'));
@@ -127,7 +127,7 @@ test('saved history stays local and does not persist attached file text', () => 
   assert.match(appJs, /currentChat\.messages\.push\(\{ role: 'user', text: userLabel \}\)/);
   assert.match(appJs, /currentChat\.messages\.push\(\{ role: 'assistant', text: reply \}\)/);
   assert.ok(!appJs.includes("currentChat.messages.push({ role: 'user', text: historyUserText })"));
-  assert.match(html, /Saved in this browser\. Clear them anytime\./);
+  assert.match(html, /I save chats in this browser\. Clear them anytime\./);
   assert.match(html, /id="historyPanel"/);
 });
 
