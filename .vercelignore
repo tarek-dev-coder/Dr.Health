@@ -1,0 +1,13 @@
+.env
+.env.*
+.git
+.github
+.vercel
+node_modules/
+test/
+coverage/
+logs/
+*.log
+README.md
+SECURITY.md
+render.yaml
