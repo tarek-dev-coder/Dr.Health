@@ -19,7 +19,7 @@
 > I am an assistant To give **direct, brief answers**. I don't keep anything on a server — your chats stay in your browser. Be Awre That I'm not a diagnosis for professional care. In an emergency, contact local services first.
 <br>
 
-### ℹ️ About Dr.Health (<a href="https://drhealth-green.vercel.app" target="_blank">Try the Live App</a>)
+### ℹ️ About Dr.Health (<a href="https://drhealth-green.vercel.app" target="_blank">Try My App</a>)
 |🤝 I'm a **health assistant** built to be free and private.|
 | :--- |
 |💬 Ask me about **symptoms**, **health notes**, or **general routines**.|
@@ -42,12 +42,14 @@
 
 ```javascript
 function main() {
+
     while (Active) {
+
         ask()
-        validate()
-        respond()
-        clear()
-        repeat()
+              validate()
+                        respond()
+                clear()
+      repeat()
     }
 }
 ```
