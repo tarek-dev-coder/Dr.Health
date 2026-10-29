@@ -52,16 +52,6 @@ Dr.Health is built as a dark-first assistant. Questions are processed with conte
 
 ---
 
-## Stats
-
-<div align="center">
-
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=tarek-dev-coder&show_icons=true&theme=dark&hide_border=true)
-
-</div>
-
----
-
 ## Credits
 
 Built by [tarek-dev-coder](https://github.com/tarek-dev-coder). Source stays private (`drhealth-source`).
