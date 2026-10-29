@@ -1,29 +1,13 @@
-# Secrets - never commit
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-*.pfx
-
 # Dependencies
 node_modules/
 
-# Vercel local project link
+# Environment files - never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Vercel
 .vercel/
-
-# Logs and runtime output
-logs/
-*.log
-npm-debug.log*
-coverage/
-.nyc_output/
-
-# Uploads are held in memory only; block accidental disk writes anyway
-uploads/
-tmp/
-temp/
 
 # Editor / OS
 .vscode/
@@ -31,3 +15,8 @@ temp/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
