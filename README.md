@@ -226,10 +226,15 @@ runs `src/index.js` as an Express function.
    npx vercel env add TRUST_PROXY production
    npx vercel env add ENFORCE_HTTPS production
    npx vercel env add ALLOWED_HOSTS production
+   npx vercel env add CHAT_TIMEOUT_MS production
+   npx vercel env add OVH_TIMEOUT_MS production
+   npx vercel env add LLM7_TIMEOUT_MS production
    ```
 
-   If you leave `ALLOWED_HOSTS` empty, set `ENFORCE_HTTPS=false` instead. Vercel
-   still serves the site over HTTPS.
+   Use `CHAT_TIMEOUT_MS=55000`, `OVH_TIMEOUT_MS=30000`, and
+   `LLM7_TIMEOUT_MS=15000` so a request finishes inside Vercel's 60-second
+   function limit. If you leave `ALLOWED_HOSTS` empty, set
+   `ENFORCE_HTTPS=false` instead. Vercel still serves the site over HTTPS.
 
    The provider defaults are keyless. Add `OVH_API_KEY` or `LLM7_API_KEY` only if
    you are using a token you control. Never put provider keys in `vercel.json`.
