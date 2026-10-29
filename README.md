@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Live](https://img.shields.io/badge/Live-drhealth-green.vercel.app-00C853?style=for-the-badge&logo=vercel)](https://drhealth-green.vercel.app)
+[![Live](https://img.shields.io/badge/Live-Online-00C853?style=flat-square&logo=vercel)](https://drhealth-green.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Source](https://img.shields.io/badge/Source-Private-grey?style=for-the-badge)](https://github.com/tarek-dev-coder/drhealth-source)
 [![Status](https://img.shields.io/badge/Status-Working-00C853?style=for-the-badge)](https://drhealth-green.vercel.app)
