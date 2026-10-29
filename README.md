@@ -8,9 +8,6 @@
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Source](https://img.shields.io/badge/Source-Private-grey?style=for-the-badge)](https://github.com/tarek-dev-coder/drhealth-source)
 
-[![Profile Views](https://komarev.com/ghpvc/?username=tarek-dev-coder&label=Profile%20Views&color=0e75b6&style=flat-square)](https://github.com/tarek-dev-coder)
-[![GitHub Stats](https://github-readme-stats.vercel.app/api?username=tarek-dev-coder&show_icons=true&theme=dark&hide_border=true&include_all_commits=true)](https://github.com/tarek-dev-coder)
-
 </div>
 
 ---
