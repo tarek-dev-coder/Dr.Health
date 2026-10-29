@@ -159,6 +159,7 @@ test('environment files are protected from accidental commits', () => {
   assert.ok(ignored.includes('.env'));
   assert.ok(ignored.includes('.env.*'));
   assert.ok(ignored.includes('node_modules/'));
+  assert.ok(ignored.includes('.vercel/'));
   assert.ok(!/AIza/.test(envExample));
   assert.ok(!/^GUEST_SESSION_SECRET=\S+/m.test(envExample));
   assert.ok(!/^GUEST_API_KEY=\S+/m.test(envExample));
@@ -173,11 +174,32 @@ test('environment files are protected from accidental commits', () => {
   assert.match(envExample, /^LLM7_API_KEY=unused$/m);
 });
 
-test('the vulnerable single-file entrypoint and deployment files are gone', async () => {
+test('the old single-file entrypoint is gone and the Vercel config is safe', async () => {
   await assert.rejects(() => access(new URL('../index.html', import.meta.url)));
   await assert.rejects(() => access(new URL('../index.js', import.meta.url)));
-  await assert.rejects(() => access(new URL('../vercel.json', import.meta.url)));
-  await assert.rejects(() => access(new URL('../.vercelignore', import.meta.url)));
+
+  const vercel = JSON.parse(await read('../vercel.json'));
+  assert.ok(Array.isArray(vercel.headers));
+  const globalHeaders = vercel.headers.find((entry) => entry.source === '/(.*)');
+  assert.ok(globalHeaders);
+  assert.ok(globalHeaders.headers.some((header) => header.key === 'Content-Security-Policy'));
+  assert.ok(globalHeaders.headers.some((header) => header.key === 'Strict-Transport-Security'));
+
+  const vercelIgnore = await read('../.vercelignore');
+  assert.match(vercelIgnore, /^\.env$/m);
+  assert.match(vercelIgnore, /^\.env\.\*$/m);
+  assert.match(vercelIgnore, /^node_modules\/$/m);
+  assert.ok(!/API_KEY|SECRET|TOKEN/i.test(vercelIgnore));
+});
+
+test('the Vercel entrypoint exports the Express app without listening', async () => {
+  const entry = await read('../src/index.js');
+  assert.match(entry, /export default app/);
+  assert.ok(!entry.includes('.listen('));
+
+  const { default: app } = await import('../src/index.js');
+  assert.equal(typeof app, 'function');
+  assert.equal(typeof app.listen, 'function');
 });
 
 test('the intro artwork is handcrafted inline SVG, not a generated image', () => {

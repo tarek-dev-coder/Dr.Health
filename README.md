@@ -204,8 +204,54 @@ caching.
 
 ## Deployment
 
-Any Node host works. The included `render.yaml` describes a free Render web
-service with no database:
+### Vercel
+
+The app deploys as one Vercel project. Vercel serves `public/` from its CDN and
+runs `src/index.js` as an Express function.
+
+1. Log in and link the repository:
+
+   ```bash
+   npx vercel login
+   npx vercel link
+   ```
+
+2. Add the production environment variables. Set `NODE_ENV=production`,
+   `TRUST_PROXY=1`, and `ENFORCE_HTTPS=true`. Set `ALLOWED_HOSTS` to the
+   production hostname, for example `your-project.vercel.app`. Vercel terminates
+   TLS and forwards the original protocol, so the proxy setting is required.
+
+   ```bash
+   npx vercel env add NODE_ENV production
+   npx vercel env add TRUST_PROXY production
+   npx vercel env add ENFORCE_HTTPS production
+   npx vercel env add ALLOWED_HOSTS production
+   ```
+
+   If you leave `ALLOWED_HOSTS` empty, set `ENFORCE_HTTPS=false` instead. Vercel
+   still serves the site over HTTPS.
+
+   The provider defaults are keyless. Add `OVH_API_KEY` or `LLM7_API_KEY` only if
+   you are using a token you control. Never put provider keys in `vercel.json`.
+
+3. Deploy:
+
+   ```bash
+   npx vercel --prod
+   ```
+
+4. Open the production URL. `public/` is served by Vercel; `/api/*` is handled by
+   the Express function. `vercel.json` adds security headers to static files.
+
+Preview deployments use different hostnames. If `ALLOWED_HOSTS` is set, add the
+preview hostname or omit the setting for preview builds.
+
+Rate limits and provider cooldowns are per function instance. For a
+multi-instance deployment, move the counters to a shared store.
+
+### Render
+
+The included `render.yaml` describes a free Render web service with no database:
 
 1. Push this repository to GitHub. Do not commit `.env`.
 2. In Render, create a **Web Service** from the repository, or use the
@@ -223,14 +269,8 @@ service with no database:
    ENFORCE_HTTPS=true
    ```
 
-   The provider defaults are keyless. Add `OVH_API_KEY` or `LLM7_API_KEY` only if
-   you are using a token you control.
-
 5. Deploy and open the public URL. Render Free instances spin down after
    inactivity, so the first request may be slow.
-
-Rate limits and provider cooldowns are per process. Restarting resets them. For a
-multi-instance deployment, move the counters to a shared store.
 
 ## Security note
 
