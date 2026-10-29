@@ -15,16 +15,16 @@
   <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&duration=3000&pause=1000&center=true&vCenter=true&random=false&width=600&height=45&lines=Free+Health+Assistant.;Dark+by+default.;Direct+%26+brief+answers.;No+server+storage." alt="Typing SVG" /></a>
 </p>
 
+
+> I am an assistant To give **direct, brief answers**. I don't keep anything on a server — your chats stay in your browser. Be Awre That I'm not a diagnosis for professional care. In an emergency, contact local services first.
 <br>
 
 ### ℹ️ About Dr.Health (<a href="https://drhealth-green.vercel.app" target="_blank">Try the Live App</a>)
-|🤝 I'm a **free health assistant** built to be direct and private.|
+|🤝 I'm a **health assistant** built to be free and private.|
 | :--- |
-|💬 Ask me about **symptoms**, **health notes**, or **general wellness**.|
-|⚡ I process queries with context from **optional text attachments**.|
-|👨‍💻 Check out the live app at **[https://drhealth-green.vercel.app](https://drhealth-green.vercel.app)**.|
-
-> I am a dark-first assistant where I use **plain language** to give **direct, brief answers**. I don't keep anything on a server — your chats stay in your browser until you clear them. I am context only — not a diagnosis or a substitute for professional care. In an emergency, contact local services first.
+|💬 Ask me about **symptoms**, **health notes**, or **general routines**.|
+|⚡ For More Accurate Answers I handle **optional health-related text attachments**.|
+|👨‍💻 Check out the live app at **[Dr.Health](https://drhealth-green.vercel.app)**.|
 
 <br>
 
