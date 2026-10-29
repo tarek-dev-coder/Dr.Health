@@ -1,130 +1,80 @@
-<!-- Improved compatibility of back to top link -->
-<a id="readme-top"></a>
+# Dr.Health
 
-<!-- PROJECT SHIELDS -->
+> Hola, I'm Dr.Health — a free health assistant with a dark-first interface. No account. No database. No daily cap. Built by [tarek-dev-coder](https://github.com/tarek-dev-coder).
+
 <div align="center">
 
-[![Live Site][live-shield]][live-url]
-[![License][license-shield]][license-url]
-[![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success?style=flat-square)](https://github.com/tarek-dev-coder/Dr.Health)
-[![PR Welcome][pr-shield]][pr-url]
+[![Live](https://img.shields.io/badge/Live-drhealth-green.vercel.app-00C853?style=for-the-badge&logo=vercel)](https://drhealth-green.vercel.app)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+[![Source](https://img.shields.io/badge/Source-Private-grey?style=for-the-badge)](https://github.com/tarek-dev-coder/drhealth-source)
 
-</div>
+[![Profile Views](https://komarev.com/ghpvc/?username=tarek-dev-coder&label=Profile%20Views&color=0e75b6&style=flat-square)](https://github.com/tarek-dev-coder)
+[![GitHub followers](https://img.shields.io/github/followers/tarek-dev-coder?label=Followers&style=flat-square&logo=github&color=181717)](https://github.com/tarek-dev-coder)
 
-<br />
-<div align="center">
-  <h1>Dr.Health</h1>
-  <p align="center">
-    <strong>A free health assistant with a dark-first, hand-built interface.</strong><br />
-    No account. No database. No daily cap. Ask a question, attach a file, get one clear answer.<br />
-    Chats saved locally in your browser. Nothing stored on a server.
-  </p>
 </div>
 
 ---
 
-## Table of Contents
+## What I Do
 
-<details>
-  <summary>Open to navigate</summary>
-  <ol>
-    <li><a href="#about">About</a></li>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#important">Important</a></li>
-    <li><a href="#privacy">Privacy & Safety</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ol>
-</details>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+| Feature | Detail |
+|---|---|
+| Health questions | Plain language, one clear answer |
+| File attachments | Health notes, symptom diaries, code |
+| Example prompts | Auto-generated per chat |
+| Storage | Browser only (`localStorage`) — nothing on server |
+| Theme | Dark by default, light available |
+| Access | No sign-in, no cookies, no limits |
 
 ---
-
-<a id="about"></a>
 
 ## About
 
-Dr.Health is a free health assistant built with a dark-first interface. It reads health questions in plain language and optional text files, then returns one clear, direct answer. There is no sign-in, no database, and no message quota. Chats are kept in browser memory (`localStorage`) and can be cleared at any time. The server does not store prompts, replies, or file contents.
-
-The interface is minimal by design: one input, one reply, no clutter.
+Dr.Health is built as a dark-first assistant. Questions are processed with context from optional text attachments. Replies are direct and brief. No data is retained server-side; chats stay in your browser until cleared.
 
 ---
-
-<a id="features"></a>
-
-## Features
-
-- **Ask health questions** — plain language, direct answers
-- **Attach text files** — symptom notes, health diaries, or code read as context
-- **Example questions** — generated automatically when starting a new chat
-- **Browser-only storage** — chats saved locally; server never stores questions or replies
-- **Dark theme** — default; light mode available
-- **No barriers** — no accounts, cookies, sign-in, or daily limits
-- **Free** — no cost, no subscription
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
----
-
-<a id="important"></a>
 
 ## Important
 
-> **Dr.Health gives you context — not a diagnosis.** It does not replace professional medical care. If you describe symptoms that could indicate an emergency, the assistant directs you to contact local emergency services immediately.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+> **Context only — not a diagnosis.** Does not replace professional care. Emergencies: contact local services.
 
 ---
 
-<a id="privacy"></a>
+## Privacy
 
-## Privacy & Safety
-
-- **No server storage** — prompts, replies, and file text exist only during the request
-- **Browser-only history** — chats saved in `localStorage`; anyone with browser profile access can read them until cleared
-- **File handling** — only filenames appear in saved chat history; file content is never saved
-- **No identifying info** — do not enter protected health information or personal identifiers
-- **Medical safety** — emergency descriptions trigger a direct instruction to seek emergency care
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+- No server storage of prompts, replies, or file content
+- Browser history (`localStorage`) — clear anytime
+- Only filenames saved in chat history; file text never stored
+- No identifying info required
 
 ---
 
-<a id="license"></a>
+## Skills & Tools
 
-## License
-
-Distributed under the [MIT License](LICENSE). See the [license file](LICENSE) for full terms.
+[![JavaScript](https://skillicons.dev/icons?i=js)](https://developer.mozilla.org/en-US/docs/Web/JavaScript) [![Node.js](https://skillicons.dev/icons?i=nodejs)](https://nodejs.org) [![Express](https://skillicons.dev/icons?i=express)](https://expressjs.com) [![HTML5](https://skillicons.dev/icons?i=html)](https://developer.mozilla.org/en-US/docs/Web/HTML) [![CSS3](https://skillicons.dev/icons?i=css)](https://developer.mozilla.org/en-US/docs/Web/CSS) [![Vercel](https://skillicons.dev/icons?i=vercel)](https://vercel.com) [![Git](https://skillicons.dev/icons?i=git)](https://git-scm.com)
 
 ---
 
-<a id="contact"></a>
+## Stats
 
-## Contact
+<div align="center">
 
-Project maintained by [tarek-dev-coder](https://github.com/tarek-dev-coder). Questions or suggestions: open an [issue](https://github.com/tarek-dev-coder/Dr.Health/issues) or start a [discussion](https://github.com/tarek-dev-coder/Dr.Health/discussions).
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=tarek-dev-coder&show_icons=true&theme=dark&hide_border=true)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+</div>
 
 ---
 
 ## Credits
 
-Built and maintained by [tarek-dev-coder](https://github.com/tarek-dev-coder).
+Built by [tarek-dev-coder](https://github.com/tarek-dev-coder). Source stays private (`drhealth-source`).
 
 ---
 
+## License
+
+[MIT License](LICENSE) — see [LICENSE](LICENSE) for full terms.
+
 <p align="center">
-  <strong>Dr.Health</strong> · Free. Dark. Direct. No account required.
+  <strong>Dr.Health</strong> · Free · Dark · Direct · No account required
 </p>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- REFERENCE LINKS -->
-[live-shield]: https://img.shields.io/badge/Live-drhealth-green.vercel.app-00C853?style=for-the-badge&logo=vercel
-[live-url]: https://drhealth-green.vercel.app
-[license-shield]: https://img.shields.io/badge/License-MIT-blue?style=for-the-badge
-[license-url]: LICENSE
-[pr-shield]: https://img.shields.io/badge/PRs-Welcome-ff69b4?style=for-the-badge
-[pr-url]: https://github.com/tarek-dev-coder/Dr.Health/pulls
